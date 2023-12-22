@@ -13,6 +13,20 @@ trap "echo -e '\n\n:: Bye!\n'; exit" SIGINT SIGTERM
 
 function _load_settings() {
     [ -f "settings.ini" ] && source "settings.ini" || source "default.ini"
+    _check_or_save_api_key
+}
+
+function _check_or_save_api_key() {
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo
+        echo -ne "Type your OpenAI API key: "
+        read -r openai_api_key
+
+        echo "OPENAI_API_KEY=\"$openai_api_key\"" >> settings.ini
+        echo -e "${BOLD}SYS: ${RESET_COLOR}Your OpenAI API key has been saved."
+        echo
+        OPENAI_API_KEY=$openai_api_key
+    fi
 }
 
 function _get_content_from_chunk() {
@@ -43,6 +57,8 @@ function _handle_chunks() {
                 
                 echo -ne "$reponse"
             fi
+        else
+            echo -ne "$chunk"
         fi
     done
 
@@ -82,6 +98,7 @@ function _create_chat_completions() {
             }" | _handle_chunks 
 }
 
+
 function _create_chat() {
     _welcome
 
@@ -108,6 +125,12 @@ function _create_chat() {
         
         "/settings")
             cat settings.ini
+            echo
+            ;;
+        
+        "/reset-settings")
+            cp defaults.ini settings.ini
+            echo -e "${BOLD}SYS: ${RESET_COLOR}Your settings have been reset. You need to restart the application."
             ;;
         
         *)  
