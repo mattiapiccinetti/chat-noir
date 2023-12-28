@@ -100,6 +100,25 @@ function _remove_double_quotes() {
     echo "${data//\\\"/\"}"
 }
 
+function _echo_completion_chunk() {
+    local completion_chunk="$1"
+    
+    response=$(_get_data_content_from_chunk "$completion_chunk") 
+    response=$(_remove_first_last "$response")
+    response=$(_remove_double_quotes "$response")
+    
+    echo -ne "$response"
+}
+
+function _echo_error_message() {
+    local data="$1"
+
+    error_message=$(echo "$data" | jq -c -e "select(.error.message != null) | .error.message")
+    error_message=$(_remove_first_last "$error_message")
+    
+    _echo_type "$error_message"
+}
+
 function _handle_chunks() {
     local not_data_chunk=""
 
@@ -108,21 +127,14 @@ function _handle_chunks() {
             completion_chunk=${chunk#data: }
             
             if echo "$completion_chunk" | jq -e . >/dev/null 2>&1; then
-                response=$(_get_data_content_from_chunk "$completion_chunk") 
-                response=$(_remove_first_last "$response")
-                response=$(_remove_double_quotes "$response")
-                
-                echo -ne "$response"
+                _echo_completion_chunk "$completion_chunk"
             fi
         else
             not_data_chunk+="$chunk"
         fi
     done
 
-    error_message=$(echo "$not_data_chunk" | jq -c -e "select(.error.message != null) | .error.message")
-    clean_error_message=$(_remove_first_last "$error_message")
-    
-    _echo_type "$clean_error_message"
+    _echo_error_message "$not_data_chunk"
 }
 
 function _welcome() {
@@ -224,7 +236,9 @@ function _exit() {
 
 function _config() {
     local delay="0.0001"
+
     _echo_sys "Here's your configuration:"
+
     _echo_type "\`\`\`" $delay
     _echo_type "$(cat $CONFIG_FILE_PATH)" $delay
     _echo_type "\`\`\`" $delay
