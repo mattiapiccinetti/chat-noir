@@ -7,6 +7,7 @@ RED="${ESC_SEQUENCE}31m"
 GREEN="${ESC_SEQUENCE}32m"
 YELLOW="${ESC_SEQUENCE}33m"
 BOLD="${ESC_SEQUENCE}1m"
+
 CONFIG_FILE_PATH="config.ini"
 
 function _echo_you() {
@@ -23,7 +24,7 @@ function _echo_sys() {
 
 function _echo_type() {
     local text=$1
-    local delay=0.001
+    local delay=${2:-0.001}
 
     for (( i=0; i<${#text}; i++ )); do 
         echo -n "${text:$i:1}";
@@ -128,7 +129,7 @@ function _welcome() {
     echo
     echo -e ":: Welcome to ${BOLD}MAYBE-GPT${RESET_COLOR}."
     echo -e ":: This application is made by Peach of Persia."
-    echo -e ":: Type \"/help\" to display this text again."
+    echo -e ":: Type \"/help\" for more information."
     echo -e ":: Press CTRL+C to exit."
     echo
 }
@@ -171,25 +172,24 @@ function _create_chat() {
             ;;
         
         "/help")
-            _welcome
-            ;;
-        
-        "/exit")
-            _exit
-            break
+            _help
             ;;
 
         "/config")
-            _echo_sys "Here's your configuration:"
-            _echo_type "\`\`\`"
-            _echo_type "$(cat $CONFIG_FILE_PATH)"
-            _echo_type "\`\`\`"
+            _config    
             ;;
         
         "/reset")
             _reset_config
             ;;
         
+        "/welcome")
+            _welcome
+            ;;
+
+        "/exit")
+            _exit
+            ;;
         *)  
             _echo_gpt ""
             _create_chat_completions "$user_prompt"
@@ -199,8 +199,17 @@ function _create_chat() {
 }
 
 function _help() {
-    echo "not implemented"
-    exit 1
+    local delay="0.0001"
+    
+    _echo_sys "Here's the list of commands:"
+    
+    _echo_type ""
+    _echo_type "  /help          Show the help menu" $delay
+    _echo_type "  /config        Show the custom configurations" $delay
+    _echo_type "  /reset         Reset the configurations to default" $delay
+    _echo_type "  /welcome       Show the welcome message" $delay
+    _echo_type "  /exit          Exit from the application" $delay
+    _echo_type ""
 }
 
 function _init() {
@@ -211,6 +220,14 @@ function _init() {
 function _exit() {
     _echo_sys "Bye!"
     exit;
+}
+
+function _config() {
+    local delay="0.0001"
+    _echo_sys "Here's your configuration:"
+    _echo_type "\`\`\`" $delay
+    _echo_type "$(cat $CONFIG_FILE_PATH)" $delay
+    _echo_type "\`\`\`" $delay
 }
 
 function main() {
