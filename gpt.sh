@@ -22,6 +22,10 @@ function _echo_sys() {
     echo -e "${BOLD}SYS:${RESET_COLOR} $(_echo_type "$1")"
 }
 
+function _echo_key() {
+    echo -e "${BOLD}KEY:${RESET_COLOR} $1"
+}
+
 function _echo_type() {
     local text=$1
     local delay=${2:-0.001}
@@ -75,7 +79,7 @@ function _check_or_save_api_key() {
     if [ -z "$OPENAI_API_KEY" ]; then
         _echo_sys "Type your OpenAI API key."
          
-        read -r -p "$(_echo_you)" openai_api_key
+        read -r -p "$(_echo_key)" openai_api_key
 
         _add_config "OPENAI_API_KEY" "$openai_api_key" && \
         _remove_empty_lines "$CONFIG_FILE_PATH" && \
