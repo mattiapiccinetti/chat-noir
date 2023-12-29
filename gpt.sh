@@ -74,8 +74,8 @@ function _add_config() {
 function _check_or_save_api_key() {
     if [ -z "$OPENAI_API_KEY" ]; then
         _echo_sys "Type your OpenAI API key."
-        _echo_you "" 
-        read -r openai_api_key
+         
+        read -r -p "$(_echo_you)" openai_api_key
 
         _add_config "OPENAI_API_KEY" "$openai_api_key" && \
         _remove_empty_lines "$CONFIG_FILE_PATH" && \
@@ -202,6 +202,7 @@ function _create_chat() {
         "/exit")
             _exit
             ;;
+
         *)  
             _echo_gpt ""
             _create_chat_completions "$user_prompt"
