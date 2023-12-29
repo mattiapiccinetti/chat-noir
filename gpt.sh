@@ -175,8 +175,7 @@ function _create_chat_completions() {
 function _create_chat() {
     while true
     do
-        _echo_you ""
-        read -r user_prompt
+        read -r -p "$(_echo_you)" user_prompt
 
         case $user_prompt in
         "")
