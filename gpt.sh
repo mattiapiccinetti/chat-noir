@@ -19,7 +19,8 @@ function _echo_gpt() {
 }
 
 function _echo_sys() {
-    echo -e "${BOLD}SYS:${RESET_COLOR} $(_echo_type "$1")"
+    echo -ne "${BOLD}SYS:${RESET_COLOR} "
+    _echo_type "$1"
 }
 
 function _echo_key() {
@@ -53,9 +54,9 @@ function _reset_config() {
     _clean_env_config $CONFIG_FILE_PATH 
     cp defaults.ini $CONFIG_FILE_PATH
 
-    _echo_sys "Your configurations have been reset."
+    _echo_sys "Your configurations have been reset to default."
     
-    _init
+    _load_config
 }
 
 function _load_config() {
@@ -75,18 +76,18 @@ function _add_config() {
     echo -e "\n$name=\"$value\"\n" >> $CONFIG_FILE_PATH
 }
 
-function _check_or_save_api_key() {
+function _check_and_save_openai_api_key() {
     if [ -z "$OPENAI_API_KEY" ]; then
-        _echo_sys "Type your OpenAI API key."
+        _echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed."
          
         read -r -p "$(_echo_key)" openai_api_key
 
-        _add_config "OPENAI_API_KEY" "$openai_api_key" && \
-        _remove_empty_lines "$CONFIG_FILE_PATH" && \
+        _add_config "OPENAI_API_KEY" "$openai_api_key"
+        _remove_empty_lines "$CONFIG_FILE_PATH"
         _echo_sys "Your OpenAI API key has been saved."
+        
+        OPENAI_API_KEY="$openai_api_key"
     fi
-    
-    _load_config
 }
 
 function _get_data_content_from_chunk() {
@@ -175,6 +176,13 @@ function _create_chat_completions() {
             }" | _handle_chunks 
 }
 
+function _get_openai_response() {
+    local prompt=$1
+    
+    _check_and_save_openai_api_key
+    _echo_gpt ""
+    _create_chat_completions "$prompt"
+}
 
 function _create_chat() {
     while true
@@ -206,9 +214,8 @@ function _create_chat() {
             _exit
             ;;
 
-        *)  
-            _echo_gpt ""
-            _create_chat_completions "$user_prompt"
+        *)
+            _get_openai_response "$user_prompt"
             ;;
         esac
     done
@@ -230,7 +237,7 @@ function _help() {
 
 function _init() {
     _load_config
-    _check_or_save_api_key
+    _check_and_save_openai_api_key
 }
 
 function _exit() {
