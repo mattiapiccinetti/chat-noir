@@ -6,6 +6,7 @@ RESET_COLOR="${ESC_SEQUENCE}0m"
 RED="${ESC_SEQUENCE}31m"
 GREEN="${ESC_SEQUENCE}32m"
 YELLOW="${ESC_SEQUENCE}33m"
+MAGENTA='\033[35m'
 BOLD="${ESC_SEQUENCE}1m"
 
 CONFIG_FILE_PATH="config.ini"
@@ -23,8 +24,13 @@ function _echo_sys() {
     _echo_type "$1"
 }
 
+function _echo_yes_no() {
+    echo -ne "${MAGENTA}Y/N:${RESET_COLOR} "
+    _echo_type "$1"
+}
+
 function _echo_key() {
-    echo -e "${BOLD}KEY:${RESET_COLOR} $1"
+    echo -e "${MAGENTA}KEY:${RESET_COLOR} $1"
 }
 
 function _echo_type() {
@@ -51,12 +57,19 @@ _clean_env_config() {
 }
 
 function _reset_config() {
-    _clean_env_config $CONFIG_FILE_PATH 
-    cp defaults.ini $CONFIG_FILE_PATH
+    _echo_sys "Your configurations will be reset to default. Do you want to proceed? [yes/no]"
+    read -r -p "$(_echo_yes_no)" response
 
-    _echo_sys "Your configurations have been reset to default."
+    if [ "$response" == "yes" ]; then
+        _clean_env_config $CONFIG_FILE_PATH 
+        cp defaults.ini $CONFIG_FILE_PATH
+
+        _echo_sys "Your configurations have been reset to default."
     
-    _load_config
+        _load_config
+    else
+        _echo_sys "Ok, no prob."
+    fi
 }
 
 function _load_config() {
@@ -74,19 +87,23 @@ function _add_config() {
     local value="$2"
 
     echo -e "\n$name=\"$value\"\n" >> $CONFIG_FILE_PATH
+    _remove_empty_lines "$CONFIG_FILE_PATH"
 }
 
 function _check_and_save_openai_api_key() {
     if [ -z "$OPENAI_API_KEY" ]; then
-        _echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed."
+        _echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed. [Press Enter to skip]"
          
         read -r -p "$(_echo_key)" openai_api_key
 
-        _add_config "OPENAI_API_KEY" "$openai_api_key"
-        _remove_empty_lines "$CONFIG_FILE_PATH"
-        _echo_sys "Your OpenAI API key has been saved."
-        
-        OPENAI_API_KEY="$openai_api_key"
+        if [ -n "$openai_api_key" ]; then
+            _add_config "OPENAI_API_KEY" "$openai_api_key"
+            _echo_sys "Your OpenAI API key has been saved."
+            
+            OPENAI_API_KEY="$openai_api_key"
+        else
+            _echo_sys "Ok, no prob."
+        fi
     fi
 }
 
