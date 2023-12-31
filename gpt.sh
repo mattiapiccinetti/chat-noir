@@ -47,7 +47,7 @@ function _echo_type() {
     echo
 }
 
-_clean_env_config() {
+function _clean_env_config() {
     local file_path="$1"
     local old_IFS=$IFS
 
@@ -59,19 +59,21 @@ _clean_env_config() {
 }
 
 function _reset_config() {
-    _echo_sys "Your configurations will be reset to default. Do you want to proceed? [yes/no]"
-    read -r -p "$(_echo_yes_no)" response
+    _echo_sys "Your configurations will be reset to default. Do you want to proceed? [Yes/No] or Enter to skip"
+    read -r -p "$(_echo_yes_no)" reply
 
-    if [ "$response" == "yes" ]; then
-        _clean_env_config $CONFIG_FILE_PATH 
-        cp defaults.ini $CONFIG_FILE_PATH
-
-        _echo_sys "Your configurations have been reset to default."
-    
-        _load_config
-    else
-        _echo_sys "Ok, no prob."
-    fi
+    case "$(_to_lower $reply)" in
+        y|yes) 
+            _clean_env_config $CONFIG_FILE_PATH 
+            cp defaults.ini $CONFIG_FILE_PATH
+            
+            _echo_sys "Your configurations have been reset to default."
+            _load_config
+            ;;
+        *)
+            _echo_sys "Ok, no prob."
+            ;;
+    esac
 }
 
 function _load_config() {
@@ -82,6 +84,10 @@ function _remove_empty_lines() {
     local filename="$1"
 
     sed -i '' -e '/^\s*$/d' "$filename"
+}
+
+function _to_lower() {
+    echo "$1" | tr '[:upper:]' '[:lower:]'
 }
 
 function _add_config() {
@@ -143,6 +149,17 @@ function _echo_error_message() {
     _echo_type "$error_message"
 }
 
+function _ask_to_reset() {
+    local data="$1"
+    
+    error_code=$(echo "$data" | jq -c -e "select(.error.code != null) | .error.code")
+    error_code=$(_remove_first_last "$error_code")
+    
+    if [[ "$error_code" == "invalid_api_key" ]]; then
+        _echo_sys "Type '/reset' to reset all configurations and add a new one."
+    fi
+}
+
 function _handle_chunks() {
     local not_data_chunk=""
 
@@ -159,6 +176,7 @@ function _handle_chunks() {
     done
 
     _echo_error_message "$not_data_chunk"
+    _ask_to_reset "$not_data_chunk"
 }
 
 function _welcome() {
