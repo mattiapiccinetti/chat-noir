@@ -12,6 +12,7 @@ YELLOW="${ESC_SEQUENCE}33m"
 BOLD="${ESC_SEQUENCE}1m"
 
 CONFIG_FILE_PATH="config.ini"
+HISTORY_FILE_PATH="history.jsonl"
 
 function _echo_you() {
     echo -ne "${RED}YOU:${RESET_COLOR} $1"
@@ -60,7 +61,7 @@ function _clean_env_config() {
 
 function _reset_config() {
     _echo_sys "Your configurations will be reset to default. Do you want to proceed? [Yes/No] or Enter to skip"
-    read -r -p "$(_echo_yes_no)" reply
+    read -e -r -p "$(_echo_yes_no)" reply
 
     case "$(_to_lower $reply)" in
         y|yes) 
@@ -102,7 +103,7 @@ function _check_and_save_openai_api_key() {
     if [ -z "$OPENAI_API_KEY" ]; then
         _echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed. [Press Enter to skip]"
          
-        read -r -p "$(_echo_key)" openai_api_key
+        read -e -r -p "$(_echo_key)" openai_api_key
 
         if [ -n "$openai_api_key" ]; then
             _add_config "OPENAI_API_KEY" "$openai_api_key"
@@ -161,6 +162,7 @@ function _ask_to_reset() {
 }
 
 function _handle_chunks() {
+    local data_chunk=""
     local not_data_chunk=""
 
     while read -r chunk; do
@@ -168,6 +170,7 @@ function _handle_chunks() {
             completion_chunk=${chunk#data: }
             
             if echo "$completion_chunk" | jq -e . >/dev/null 2>&1; then
+                data_chunk+=$(_echo_completion_chunk "$completion_chunk")
                 _echo_completion_chunk "$completion_chunk"
             fi
         else
@@ -177,6 +180,7 @@ function _handle_chunks() {
 
     _echo_error_message "$not_data_chunk"
     _ask_to_reset "$not_data_chunk"
+    _save_message_to_history "assistant" "$data_chunk"
 }
 
 function _welcome() {
@@ -188,8 +192,41 @@ function _welcome() {
     echo
 }
 
+function _create_json_message() {
+    local role="$1"
+    local content="$2"
+
+    jq -c -n --arg ROLE "$role" --arg CONTENT "$content" '{"role": $ROLE, "content": $CONTENT}'
+}
+
+function _save_message_to_history() {
+    local role="$1"
+    local content="$2"
+    
+    json_message=$(_create_json_message "$role" "$content")
+    echo "$json_message" | jq -c >> "$HISTORY_FILE_PATH"
+}
+
+function _create_openai_payload_from_history() {
+    local content="$1"
+    local openai_json_payload=$(jq -n \
+            --arg OPENAI_MODEL "$OPENAI_MODEL" \
+            --arg OPENAI_ROLE_SYSTEM_CONTENT "$OPENAI_ROLE_SYSTEM_CONTENT" \
+            '{"model": $OPENAI_MODEL, "messages": [], "stream": true}')
+
+    _save_message_to_history "user" "$content"
+    
+    while IFS= read -r json_message || [[ -n "$json_message" ]]; do
+        openai_json_payload=$(
+            echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
+    done < "$HISTORY_FILE_PATH"
+
+    echo "$openai_json_payload"
+}
+
 function _create_chat_completions() {
     local content="$1"
+    local openai_json_payload=$(_create_openai_payload_from_history "$content")
 
     curl $OPENAI_API_URL \
             --no-buffer \
@@ -197,20 +234,7 @@ function _create_chat_completions() {
             --show-error \
             --header "Content-Type: application/json" \
             --header "Authorization: Bearer $OPENAI_API_KEY" \
-            --data "{
-                \"model\": \"$OPENAI_MODEL\",
-                \"messages\": [
-                    {
-                        \"role\": \"system\",
-                        \"content\": \"$OPENAI_ROLE_SYSTEM_CONTENT\"
-                    },
-                    {
-                        \"role\": \"user\",
-                        \"content\": \"$content\"
-                    }
-                ],
-                \"stream\": true
-            }" | _handle_chunks 
+            --data "$openai_json_payload" | _handle_chunks
 }
 
 function _get_openai_response() {
@@ -224,7 +248,7 @@ function _get_openai_response() {
 function _create_chat() {
     while true
     do
-        read -r -p "$(_echo_you)" user_prompt
+        read -e -r -p "$(_echo_you)" user_prompt
 
         case $user_prompt in
         "")
@@ -272,7 +296,13 @@ function _help() {
     _echo_type ""
 }
 
+function _clear_history() {
+    truncate -s 0 "$HISTORY_FILE_PATH"
+}
+
 function _init() {
+    _clear_history
+    _save_message_to_history "system" "$OPENAI_ROLE_SYSTEM_CONTENT"
     _load_config
     _check_and_save_openai_api_key
 }
@@ -286,15 +316,17 @@ function _config() {
     local delay="0.0001"
 
     _echo_sys "Here's your configuration:"
-
     _echo_type "\`\`\`" $delay
     _echo_type "$(cat $CONFIG_FILE_PATH)" $delay
     _echo_type "\`\`\`" $delay
 }
 
+
 function main() {
     _welcome
-    _init && [ $# -gt 0 ] && _create_chat_completions "$1" || _create_chat
+    _init
+    
+    [ $# -gt 0 ] && _create_chat_completions "$1" || _create_chat
 }
 
 trap "echo; _exit" SIGINT SIGTERM
