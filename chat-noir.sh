@@ -25,8 +25,17 @@ function echo_gpt() {
 }
 
 function echo_sys() {
-    echo -ne "${BOLD}SYS:${RESET_COLOR} "
-    echo_type "$1"
+    local custom_tab="     "
+
+    for parameter in "$@"; do
+        if [[ "$parameter" == "$1" ]]; then
+            echo -ne "${BOLD}SYS:${RESET_COLOR} "
+            echo_type "$1"
+        else
+            echo_type "$custom_tab$parameter"
+        fi
+        
+    done
 }
 
 function echo_yes_no() {
@@ -43,7 +52,13 @@ function echo_type() {
     local delay=${2:-0.001}
 
     for (( i=0; i<${#text}; i++ )); do 
-        echo -n "${text:$i:1}";
+        if [[ "${text:$i:1}" == "\\" ]]; then
+            echo -ne "${text:$i:2}";
+            ((i++))
+        else
+            echo -n "${text:$i:1}";
+        fi
+
         sleep $delay
     done
 
@@ -71,7 +86,9 @@ function clean_env_config() {
 }
 
 function reset_config() {
-    echo_sys "Your configurations will be reset to default. Do you want to proceed? [Yes/No] or Enter to skip"
+    echo_sys \
+        "Your configurations will be reset to default." \
+        "Do you want to proceed? [Yes/No] or Enter to skip."
     read -e -r -p "$(echo_yes_no)" reply
 
     case "$(to_lower $reply)" in
@@ -102,7 +119,7 @@ function to_lower() {
     echo "$1" | tr '[:upper:]' '[:lower:]'
 }
 
-function addconfig() {
+function add_config() {
     local name="$1"
     local value="$2"
 
@@ -112,12 +129,14 @@ function addconfig() {
 
 function check_and_save_openai_api_key() {
     if [[ -z "$OPENAI_API_KEY" ]]; then
-        echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed. [Press Enter to skip]"
+        echo_sys \
+            "It seems you haven't entered your OpenAI API key yet." \
+            "Please type a valid API key to proceed. [Press Enter to skip]"
          
         read -e -r -p "$(echo_key)" openai_api_key
 
         if [[ -n "$openai_api_key" ]]; then
-            addconfig "OPENAI_API_KEY" "$openai_api_key"
+            add_config "OPENAI_API_KEY" "$openai_api_key"
             echo_sys "Your OpenAI API key has been saved."
             
             OPENAI_API_KEY="$openai_api_key"
@@ -154,28 +173,26 @@ function echo_completion_chunk() {
     echo -ne "$response"
 }
 
-function echo_error_message() {
+function get_openai_error_message() {
     local error_message
     
     error_message=$(echo "$1" | jq -c -e "select(.error.message != null) | .error.message")
     error_message=$(remove_first_last "$error_message")
-    echo_type "$error_message"
+    echo "$error_message"
 }
 
-function ask_to_reset() {
+function get_openai_error_code() {
     local error_code
     
     error_code=$(echo "$1" | jq -c -e "select(.error.code != null) | .error.code")
     error_code=$(remove_first_last "$error_code")
-    
-    if [[ "$error_code" == "invalid_api_key" ]]; then
-        echo_sys "Type '/reset' to reset all configurations and add a new one."
-    fi
+
+    echo "$error_code"
 }
 
 function handle_chunks() {
-    local data_chunk=""
-    local not_data_chunk=""
+    local data_chunk
+    local error_response
 
     while read -r chunk; do
         if [[ $chunk == "data: "* ]]; then
@@ -186,13 +203,20 @@ function handle_chunks() {
                 echo_completion_chunk "$completion_chunk"
             fi
         else
-            not_data_chunk+="$chunk"
+            error_response+="$chunk"
         fi
     done
 
-    echo_error_message "$not_data_chunk"
-    ask_to_reset "$not_data_chunk"
-    save_message_to_history "assistant" "$data_chunk"
+    if [[ -n "$error_response" ]]; then
+        echo_type "$(get_openai_error_message "$error_response")"
+        
+        if [[ "$(get_openai_error_code "$error_response")" == "invalid_api_key" ]]; then
+            echo_sys "Type '/reset' to reset all configurations and add a new one."
+        fi
+    else
+        echo ""
+        save_message_to_history "assistant" "$data_chunk"
+    fi
 }
 
 function welcome() {
@@ -246,7 +270,8 @@ function create_chat_completions() {
             --show-error \
             --header "Content-Type: application/json" \
             --header "Authorization: Bearer $OPENAI_API_KEY" \
-            --data "$openai_json_payload" | handle_chunks
+            --data "$openai_json_payload" \
+        | handle_chunks
 }
 
 function get_openai_response() {
