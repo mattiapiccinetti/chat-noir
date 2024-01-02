@@ -18,11 +18,11 @@ YELLOW="${ESC_SEQUENCE}33m"
 BOLD="${ESC_SEQUENCE}1m"
 
 function echo_you() {
-    echo -ne "${RED}YOU:${RESET_COLOR} $1"
+    echo -ne "${CYAN}YOU:${RESET_COLOR} $1"
 }
 
 function echo_gpt() {
-    echo -ne "${GREEN}GPT:${RESET_COLOR} $1"
+    echo -ne "${MAGENTA}GPT:${RESET_COLOR} $1"
 }
 
 function echo_sys() {
@@ -39,12 +39,12 @@ function echo_sys() {
 }
 
 function echo_yes_no() {
-    echo -ne "${MAGENTA}Y/N:${RESET_COLOR} "
+    echo -ne "${YELLOW}Y/N:${RESET_COLOR} "
     echo_type "$1"
 }
 
 function echo_key() {
-    echo -e "${MAGENTA}KEY:${RESET_COLOR} $1"
+    echo -e "${YELLOW}KEY:${RESET_COLOR} $1"
 }
 
 function echo_type() {
