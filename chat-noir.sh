@@ -2,6 +2,7 @@
 
 APPLICATION_NAME="CHAT-NOIR"
 APPLICATION_VERSION="0.0.1"
+DEFAULT_CONFIG_FILE_PATH="defaults.ini"
 CONFIG_FILE_PATH="config.ini"
 HISTORY_FILE_PATH="history.jsonl"
 
@@ -34,7 +35,6 @@ function echo_sys() {
         else
             echo_type "$custom_tab$parameter"
         fi
-        
     done
 }
 
@@ -86,27 +86,27 @@ function clean_env_config() {
 }
 
 function reset_config() {
+    clean_env_config $CONFIG_FILE_PATH 
+    cp "$DEFAULT_CONFIG_FILE_PATH" $CONFIG_FILE_PATH
+    load_config        
+    
+    echo_sys "Your configurations have been reset to default."
+}
+
+function load_config() {
+    [[ -f "$CONFIG_FILE_PATH" ]] && source "$CONFIG_FILE_PATH" || reset_config
+}
+
+function ask_to_reset_config() {
     echo_sys \
         "Your configurations will be reset to default." \
         "Do you want to proceed? [Yes/No] or Enter to skip."
     read -e -r -p "$(echo_yes_no)" reply
 
-    case "$(to_lower $reply)" in
-        y|yes) 
-            clean_env_config $CONFIG_FILE_PATH 
-            cp defaults.ini $CONFIG_FILE_PATH
-            
-            echo_sys "Your configurations have been reset to default."
-            load_config
-            ;;
-        *)
-            echo_sys "Ok, no prob."
-            ;;
-    esac
-}
-
-function load_config() {
-    [[ -f "$CONFIG_FILE_PATH" ]] && source "$CONFIG_FILE_PATH" || reset_config
+    reply=$(to_lower "$reply")
+    ([[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]) \
+        && reset_config \
+        || echo_sys "Ok, no prob."
 }
 
 function remove_empty_lines() {
@@ -291,7 +291,7 @@ function create_chat() {
         "")         continue ;;
         "/help")    help ;;
         "/config")  echo_config ;;
-        "/reset")   reset_config ;;
+        "/reset")   ask_to_reset_config ;;
         "/welcome") welcome ;;
         "/exit")    handle_exit ;;
         "/history") show_history ;;
