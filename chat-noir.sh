@@ -55,7 +55,7 @@ function _clean_env_config() {
     local old_IFS=$IFS
 
     while IFS='=' read -r key _ ; do
-        [ -n "$key" ] && unset "$key"
+        [[ -n "$key" ]] && unset "$key"
     done < "$file_path"
 
     IFS=$old_IFS
@@ -80,7 +80,7 @@ function _reset_config() {
 }
 
 function _load_config() {
-    [ -f "$CONFIG_FILE_PATH" ] && source "$CONFIG_FILE_PATH" || _reset_config
+    [[ -f "$CONFIG_FILE_PATH" ]] && source "$CONFIG_FILE_PATH" || _reset_config
 }
 
 function _remove_empty_lines() {
@@ -102,12 +102,12 @@ function _add_config() {
 }
 
 function _check_and_save_openai_api_key() {
-    if [ -z "$OPENAI_API_KEY" ]; then
+    if [[ -z "$OPENAI_API_KEY" ]]; then
         _echo_sys "It seems you haven't entered your OpenAI API key yet. Please type a valid API key to proceed. [Press Enter to skip]"
          
         read -e -r -p "$(_echo_key)" openai_api_key
 
-        if [ -n "$openai_api_key" ]; then
+        if [[ -n "$openai_api_key" ]]; then
             _add_config "OPENAI_API_KEY" "$openai_api_key"
             _echo_sys "Your OpenAI API key has been saved."
             
@@ -328,7 +328,7 @@ function main() {
     _welcome
     _init
     
-    [ $# -gt 0 ] && _create_chat_completions "$1" || _create_chat
+    [[ $# -gt 0 ]] && _create_chat_completions "$1" || _create_chat
 }
 
 trap "echo; _exit" SIGINT SIGTERM
