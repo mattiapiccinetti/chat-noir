@@ -94,7 +94,9 @@ function reset_config() {
 }
 
 function load_config() {
-    [[ -f "$CONFIG_FILE_PATH" ]] && source "$CONFIG_FILE_PATH" || reset_config
+    [[ -f "$CONFIG_FILE_PATH" ]] \
+        && source "$CONFIG_FILE_PATH" \
+        || reset_config
 }
 
 function ask_to_reset_config() {
@@ -127,6 +129,15 @@ function add_config() {
     remove_empty_lines "$CONFIG_FILE_PATH"
 }
 
+function save_openai_api_key() {
+    local key="$1"
+    
+    add_config "OPENAI_API_KEY" "$key"
+    OPENAI_API_KEY="$key"
+    
+    echo_sys "Your OpenAI API key has been saved."
+}
+
 function check_and_save_openai_api_key() {
     if [[ -z "$OPENAI_API_KEY" ]]; then
         echo_sys \
@@ -135,14 +146,9 @@ function check_and_save_openai_api_key() {
          
         read -e -r -p "$(echo_key)" openai_api_key
 
-        if [[ -n "$openai_api_key" ]]; then
-            add_config "OPENAI_API_KEY" "$openai_api_key"
-            echo_sys "Your OpenAI API key has been saved."
-            
-            OPENAI_API_KEY="$openai_api_key"
-        else
-            echo_sys "Ok, no prob."
-        fi
+        [[ -n "$openai_api_key" ]] \
+            && save_openai_api_key "$openai_api_key" \
+            || echo_sys "Ok, no prob."
     fi
 }
 
@@ -191,9 +197,10 @@ function get_openai_error_code() {
 }
 
 function handle_chunks() {
+    local completion_chunk
     local data_chunk
-    local error_response
-
+    local error_chunk
+    
     while read -r chunk; do
         if [[ $chunk == "data: "* ]]; then
             completion_chunk=${chunk#data: }
@@ -203,16 +210,15 @@ function handle_chunks() {
                 echo_completion_chunk "$completion_chunk"
             fi
         else
-            error_response+="$chunk"
+            error_chunk+="$chunk"
         fi
     done
 
-    if [[ -n "$error_response" ]]; then
-        echo_type "$(get_openai_error_message "$error_response")"
+    if [[ -n "$error_chunk" ]]; then
+        echo_type "$(get_openai_error_message "$error_chunk")"
         
-        if [[ "$(get_openai_error_code "$error_response")" == "invalid_api_key" ]]; then
+        [[ "$(get_openai_error_code "$error_chunk")" == "invalid_api_key" ]] && \
             echo_sys "Type '/reset' to reset all configurations and add a new one."
-        fi
     else
         echo ""
         save_message_to_history "assistant" "$data_chunk"
@@ -232,19 +238,28 @@ function create_json_message() {
     local role="$1"
     local content="$2"
 
-    jq -c -n --arg ROLE "$role" --arg CONTENT "$content" '{"role": $ROLE, "content": $CONTENT}'
+    jq \
+        -c \
+        -n \
+        --arg ROLE "$role" \
+        --arg CONTENT "$content" \
+        '{"role": $ROLE, "content": $CONTENT}'
 }
 
 function save_message_to_history() {
     local role="$1"
     local content="$2"
     
-    echo "$(create_json_message "$role" "$content")" | jq -c >> "$HISTORY_FILE_PATH"
+    echo "$(create_json_message "$role" "$content")" \
+        | jq -c >> "$HISTORY_FILE_PATH"
 }
 
 function create_openai_payload_from_history() {
     local content="$1"
-    local openai_json_payload=$(jq -n \
+    local openai_json_payload
+    
+    openai_json_payload=$(
+        jq -n \
             --arg OPENAI_MODEL "$OPENAI_MODEL" \
             --arg OPENAI_ROLE_SYSTEM_CONTENT "$OPENAI_ROLE_SYSTEM_CONTENT" \
             '{"model": $OPENAI_MODEL, "messages": [], "stream": true}')
@@ -343,7 +358,9 @@ function main() {
     welcome
     init
     
-    [[ $# -gt 0 ]] && create_chat_completions "$1" || create_chat
+    [[ $# -gt 0 ]] \
+        && create_chat_completions "$1" \
+        || create_chat
 }
 
 trap "echo; handle_exit" SIGINT SIGTERM
