@@ -1,5 +1,10 @@
 #!/bin/bash
 
+APPLICATION_NAME="CHAT-NOIR"
+APPLICATION_VERSION="0.0.1"
+CONFIG_FILE_PATH="config.ini"
+HISTORY_FILE_PATH="history.jsonl"
+
 ESC_SEQUENCE="\033["
 RESET_CURSOR_SEQUENCE="\r${ESC_SEQUENCE}K"
 RESET_COLOR="${ESC_SEQUENCE}0m"
@@ -10,9 +15,6 @@ CYAN="${ESC_SEQUENCE}36m"
 MAGENTA="${ESC_SEQUENCE}35m"
 YELLOW="${ESC_SEQUENCE}33m"
 BOLD="${ESC_SEQUENCE}1m"
-
-CONFIG_FILE_PATH="config.ini"
-HISTORY_FILE_PATH="history.jsonl"
 
 function _echo_you() {
     echo -ne "${RED}YOU:${RESET_COLOR} $1"
@@ -185,10 +187,10 @@ function _handle_chunks() {
 
 function _welcome() {
     echo
-    echo -e ":: Welcome to ${BOLD}MAYBE-GPT${RESET_COLOR}."
-    echo -e ":: This application is made by Peach of Persia."
-    echo -e ":: Type \"/help\" for more information."
-    echo -e ":: Press CTRL+C to exit."
+    echo -e "  :: Welcome to ${BOLD}$APPLICATION_NAME $APPLICATION_VERSION${RESET_COLOR}."
+    echo -e "  :: This application is made by Peach of Persia."
+    echo -e "  :: Type \"/help\" for more information."
+    echo -e "  :: Press CTRL+C to exit."
     echo
 }
 
