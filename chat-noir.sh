@@ -239,8 +239,7 @@ function save_message_to_history() {
     local role="$1"
     local content="$2"
     
-    json_message=$(create_json_message "$role" "$content")
-    echo "$json_message" | jq -c >> "$HISTORY_FILE_PATH"
+    echo "$(create_json_message "$role" "$content")" | jq -c >> "$HISTORY_FILE_PATH"
 }
 
 function create_openai_payload_from_history() {
@@ -254,7 +253,8 @@ function create_openai_payload_from_history() {
     
     while IFS= read -r json_message || [[ -n "$json_message" ]]; do
         openai_json_payload=$(
-            echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
+            echo "$openai_json_payload" \
+                | jq --argjson json_message "$json_message" '.messages += [$json_message]')
     done < "$HISTORY_FILE_PATH"
 
     echo "$openai_json_payload"
@@ -294,6 +294,7 @@ function create_chat() {
         "/reset")   reset_config ;;
         "/welcome") welcome ;;
         "/exit")    handle_exit ;;
+        "/history") show_history ;;
         *)          get_openai_response "$user_prompt" ;;
         esac
     done
@@ -309,8 +310,17 @@ function help() {
     echo_type "  /config        Show the custom configurations" $delay
     echo_type "  /reset         Reset the configurations to default" $delay
     echo_type "  /welcome       Show the welcome message" $delay
+    echo_type "  /history       Show the conversation history so far as JSON" $delay
     echo_type "  /exit          Exit from the application" $delay
     echo_type ""
+}
+
+function show_history() {
+    echo_sys "Here's your conversation history:"
+    
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        echo_type "$line"    
+    done < "$HISTORY_FILE_PATH"    
 }
 
 function clear_history() {
