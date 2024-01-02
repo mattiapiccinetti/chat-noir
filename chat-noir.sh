@@ -5,6 +5,7 @@ APPLICATION_VERSION="0.0.1"
 DEFAULT_CONFIG_FILE_PATH="defaults.ini"
 CONFIG_FILE_PATH="config.ini"
 HISTORY_FILE_PATH="history.jsonl"
+CODE_BLOCK_SYMBOL="\`\`\`"
 
 ESC_SEQUENCE="\033["
 RESET_CURSOR_SEQUENCE="\r${ESC_SEQUENCE}K"
@@ -26,15 +27,20 @@ function echo_gpt() {
 }
 
 function echo_sys() {
-    local custom_tab="     "
+    local indentation
+    
+    echo -ne "${BOLD}SYS:${RESET_COLOR} "
+    if [[ "$1" == "--no-indent" ]]; then
+        indentation=""
+        shift
+    else
+        indentation="     "
+    fi
 
     for parameter in "$@"; do
-        if [[ "$parameter" == "$1" ]]; then
-            echo -ne "${BOLD}SYS:${RESET_COLOR} "
-            echo_type "$1"
-        else
-            echo_type "$custom_tab$parameter"
-        fi
+        [[ "$parameter" == "$1" ]] \
+            && echo_type "$parameter" \
+            || echo_type "$indentation$parameter"
     done
 }
 
@@ -66,12 +72,12 @@ function echo_type() {
 }
 
 function echo_config() {
-    local delay="0.0001"
-
-    echo_sys "Here's your configuration:"
-    echo_type "\`\`\`" $delay
-    echo_type "$(cat $CONFIG_FILE_PATH)" $delay
-    echo_type "\`\`\`" $delay
+    echo_sys \
+        "--no-indent" \
+        "Here's your configuration:" \
+        "$CODE_BLOCK_SYMBOL" \
+        "$(cat $CONFIG_FILE_PATH)" \
+        "$CODE_BLOCK_SYMBOL"
 }
 
 function clean_env_config() {
@@ -316,26 +322,25 @@ function create_chat() {
 }
 
 function help() {
-    local delay="0.0001"
-    
-    echo_sys "Here's the list of commands:"
-    
-    echo_type ""
-    echo_type "  /help          Show the help menu" $delay
-    echo_type "  /config        Show the custom configurations" $delay
-    echo_type "  /reset         Reset the configurations to default" $delay
-    echo_type "  /welcome       Show the welcome message" $delay
-    echo_type "  /history       Show the conversation history so far as JSON" $delay
-    echo_type "  /exit          Exit from the application" $delay
-    echo_type ""
+    echo_sys \
+        "--no-indent" \
+        "Here's the list of commands:" \
+        "" \
+        " /help     Show the help menu" \
+        " /config   Show the custom configurations" \
+        " /reset    Reset the configurations to default" \
+        " /welcome  Show the welcome message" \
+        " /history  Show the conversation history so far as JSON" \
+        " /exit     Exit from the application" \
+        ""
 }
 
 function show_history() {
     echo_sys "Here's your conversation history:"
-    
+
     while IFS= read -r line || [[ -n "$line" ]]; do
-        echo_type "$line"    
-    done < "$HISTORY_FILE_PATH"    
+        echo_type "$line"
+    done < "$HISTORY_FILE_PATH"
 }
 
 function clear_history() {
