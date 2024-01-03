@@ -1,17 +1,17 @@
 #!/bin/bash
 
-APPLICATION_NAME="CHAT-NOIR"
-APPLICATION_VERSION="0.0.1"
-DEFAULT_CONFIG_FILE_PATH="defaults.ini"
-CONFIG_FILE_PATH="config.ini"
-HISTORY_FILE_PATH="history.jsonl"
-CODE_BLOCK_SYMBOL="\`\`\`"
-ESC_SEQUENCE="\033["
-RESET_COLOR="${ESC_SEQUENCE}0m"
-CYAN="${ESC_SEQUENCE}36m"
-MAGENTA="${ESC_SEQUENCE}35m"
-YELLOW="${ESC_SEQUENCE}33m"
-BOLD="${ESC_SEQUENCE}1m"
+readonly APPLICATION_NAME="CHAT-NOIR"
+readonly APPLICATION_VERSION="0.0.1"
+readonly DEFAULT_CONFIG_FILE_PATH="defaults.ini"
+readonly CONFIG_FILE_PATH="config.ini"
+readonly HISTORY_FILE_PATH="history.jsonl"
+readonly CODE_BLOCK_SYMBOL="\`\`\`"
+readonly ESC_SEQUENCE="\033["
+readonly RESET_COLOR="${ESC_SEQUENCE}0m"
+readonly CYAN="${ESC_SEQUENCE}36m"
+readonly MAGENTA="${ESC_SEQUENCE}35m"
+readonly YELLOW="${ESC_SEQUENCE}33m"
+readonly BOLD="${ESC_SEQUENCE}1m"
 
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
@@ -33,9 +33,11 @@ function echo_sys() {
     fi
 
     for parameter in "$@"; do
-        [[ "$parameter" == "$1" ]] \
-            && echo_type "$parameter" \
-            || echo_type "$indentation$parameter"
+        if [[ "$parameter" == "$1" ]]; then
+            echo_type "$parameter"
+        else 
+            echo_type "$indentation$parameter"
+        fi
     done
 }
 
@@ -94,21 +96,27 @@ function reset_config() {
 }
 
 function load_config() {
-    [[ -f "$CONFIG_FILE_PATH" ]] \
-        && source "$CONFIG_FILE_PATH" \
-        || reset_config
+    if [[ -f "$CONFIG_FILE_PATH" ]]; then
+        # shellcheck source=config.ini
+        source "$CONFIG_FILE_PATH"
+    else
+        reset_config
+    fi
 }
 
 function ask_to_reset_config() {
     echo_sys \
         "Your configurations will be reset to default." \
         "Do you want to proceed? [Yes/No] or Enter to skip."
+    
     read -e -r -p "$(echo_yes_no)" reply
-
     reply=$(to_lower "$reply")
-    ([[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]) \
-        && reset_config \
-        || echo_sys "Ok, no prob."
+    
+    if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
+        reset_config
+    else
+        echo_sys "Ok, no prob."
+    fi
 }
 
 function remove_empty_lines() {
@@ -145,10 +153,11 @@ function check_and_save_openai_api_key() {
             "Please type a valid API key to proceed. [Press Enter to skip]"
          
         read -e -r -p "$(echo_key)" openai_api_key
-
-        [[ -n "$openai_api_key" ]] \
-            && save_openai_api_key "$openai_api_key" \
-            || echo_sys "Ok, no prob."
+        if [[ -n "$openai_api_key" ]]; then 
+            save_openai_api_key "$openai_api_key"
+        else 
+            echo_sys "Ok, no prob."
+        fi
     fi
 }
 
@@ -357,9 +366,11 @@ function main() {
     welcome
     init
     
-    [[ $# -gt 0 ]] \
-        && create_chat_completions "$1" \
-        || create_chat
+    if [[ $# -gt 0 ]]; then
+        create_chat_completions "$1"
+    else
+        create_chat
+    fi
 }
 
 trap "echo; handle_exit" SIGINT SIGTERM
