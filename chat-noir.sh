@@ -5,6 +5,7 @@ readonly APPLICATION_VERSION="0.0.1"
 readonly DEFAULT_CONFIG_FILE_PATH="defaults.ini"
 readonly CONFIG_FILE_PATH="config.ini"
 readonly HISTORY_FILE_PATH="history.jsonl"
+
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
 readonly ESC_SEQUENCE="\033["
 readonly RESET_COLOR="${ESC_SEQUENCE}0m"
@@ -18,7 +19,7 @@ function echo_you() {
 }
 
 function echo_gpt() {
-    echo -ne "${MAGENTA}GPT:${RESET_COLOR} $1"
+    echo -ne "${MAGENTA}GPT: ${RESET_COLOR}"
 }
 
 function echo_sys() {
@@ -41,12 +42,19 @@ function echo_sys() {
     done
 }
 
-function echo_yes_no() {
-    echo -ne "${YELLOW}Y/N: ${RESET_COLOR}"
+function echo_ask() {
+    local content="$1"
+
+    content=$(to_upper "${content:0:3}")
+    echo -ne "${YELLOW}$content: ${RESET_COLOR}"
+}
+
+function echo_y_n() {
+    echo_ask "y/n"
 }
 
 function echo_key() {
-    echo -e "${YELLOW}KEY: ${RESET_COLOR}"
+    echo_ask "key"
 }
 
 function echo_type() {
@@ -67,7 +75,7 @@ function echo_type() {
     echo
 }
 
-function echo_config() {
+function show_config() {
     echo_sys \
         "--no-indent" \
         "Here's your configuration:" \
@@ -109,9 +117,9 @@ function ask_to_reset_config() {
         "Your configurations will be reset to default." \
         "Do you want to proceed? [Yes/No] or Enter to skip."
     
-    read -e -r -p "$(echo_yes_no)" reply
+    read -e -r -p "$(echo_y_n)" reply
     reply=$(to_lower "$reply")
-    
+
     if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
         reset_config
     else
@@ -127,6 +135,10 @@ function remove_empty_lines() {
 
 function to_lower() {
     echo "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+function to_upper() {
+    echo "$1" | tr '[:lower:]' '[:upper:]'
 }
 
 function add_config() {
@@ -315,7 +327,7 @@ function create_chat() {
         case $user_prompt in
         "")         continue ;;
         "/help")    help ;;
-        "/config")  echo_config ;;
+        "/config")  show_config ;;
         "/reset")   ask_to_reset_config ;;
         "/welcome") welcome ;;
         "/exit")    handle_exit ;;
