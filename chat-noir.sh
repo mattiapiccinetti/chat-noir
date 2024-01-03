@@ -59,7 +59,7 @@ function echo_type() {
             echo -n "${text:$i:1}";
         fi
 
-        sleep $delay
+        sleep "$delay"
     done
 
     echo
@@ -253,22 +253,22 @@ function save_message_to_history() {
     create_json_message "$role" "$content" | jq -c >> "$HISTORY_FILE_PATH"
 }
 
+function get_base_openai_payload() {
+    jq \
+        -n \
+        --arg OPENAI_MODEL "$OPENAI_MODEL" \
+        --arg OPENAI_ROLE_SYSTEM_CONTENT "$OPENAI_ROLE_SYSTEM_CONTENT" \
+        '{"model": $OPENAI_MODEL, "messages": [{"role":"system", "content": $OPENAI_ROLE_SYSTEM_CONTENT}], "stream": true}'
+}
+
 function create_openai_payload_from_history() {
     local content="$1"
     local openai_json_payload
     
-    openai_json_payload=$(
-        jq -n \
-            --arg OPENAI_MODEL "$OPENAI_MODEL" \
-            --arg OPENAI_ROLE_SYSTEM_CONTENT "$OPENAI_ROLE_SYSTEM_CONTENT" \
-            '{"model": $OPENAI_MODEL, "messages": [], "stream": true}')
-
-    save_message_to_history "user" "$content"
-    
+    openai_json_payload=$(get_base_openai_payload)
     while IFS= read -r json_message || [[ -n "$json_message" ]]; do
         openai_json_payload=$(
-            echo "$openai_json_payload" \
-                | jq --argjson json_message "$json_message" '.messages += [$json_message]')
+            echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
     done < "$HISTORY_FILE_PATH"
 
     echo "$openai_json_payload"
@@ -290,11 +290,12 @@ function create_chat_completions() {
 }
 
 function get_openai_response() {
-    local prompt=$1
+    local content=$1
     
     check_and_save_openai_api_key
+    save_message_to_history "user" "$content"
     echo_gpt ""
-    create_chat_completions "$prompt"
+    create_chat_completions "$content"
 }
 
 function create_chat() {
@@ -343,7 +344,6 @@ function clear_history() {
 
 function init() {
     clear_history
-    save_message_to_history "system" "$OPENAI_ROLE_SYSTEM_CONTENT"
     load_config
     check_and_save_openai_api_key
 }
