@@ -6,20 +6,15 @@ DEFAULT_CONFIG_FILE_PATH="defaults.ini"
 CONFIG_FILE_PATH="config.ini"
 HISTORY_FILE_PATH="history.jsonl"
 CODE_BLOCK_SYMBOL="\`\`\`"
-
 ESC_SEQUENCE="\033["
-RESET_CURSOR_SEQUENCE="\r${ESC_SEQUENCE}K"
 RESET_COLOR="${ESC_SEQUENCE}0m"
-RED="${ESC_SEQUENCE}31m"
-GREEN="${ESC_SEQUENCE}32m"
-BLUE="${ESC_SEQUENCE}0;34m"
 CYAN="${ESC_SEQUENCE}36m"
 MAGENTA="${ESC_SEQUENCE}35m"
 YELLOW="${ESC_SEQUENCE}33m"
 BOLD="${ESC_SEQUENCE}1m"
 
 function echo_you() {
-    echo -ne "${CYAN}YOU:${RESET_COLOR} $1"
+    echo -ne "${CYAN}YOU: ${RESET_COLOR}"
 }
 
 function echo_gpt() {
@@ -45,12 +40,11 @@ function echo_sys() {
 }
 
 function echo_yes_no() {
-    echo -ne "${YELLOW}Y/N:${RESET_COLOR} "
-    echo_type "$1"
+    echo -ne "${YELLOW}Y/N: ${RESET_COLOR}"
 }
 
 function echo_key() {
-    echo -e "${YELLOW}KEY:${RESET_COLOR} $1"
+    echo -e "${YELLOW}KEY: ${RESET_COLOR}"
 }
 
 function echo_type() {
@@ -256,8 +250,7 @@ function save_message_to_history() {
     local role="$1"
     local content="$2"
     
-    echo "$(create_json_message "$role" "$content")" \
-        | jq -c >> "$HISTORY_FILE_PATH"
+    create_json_message "$role" "$content" | jq -c >> "$HISTORY_FILE_PATH"
 }
 
 function create_openai_payload_from_history() {
@@ -283,9 +276,10 @@ function create_openai_payload_from_history() {
 
 function create_chat_completions() {
     local content="$1"
-    local openai_json_payload=$(create_openai_payload_from_history "$content")
-
-    curl $OPENAI_API_URL \
+    local openai_json_payload
+    
+    openai_json_payload=$(create_openai_payload_from_history "$content")
+    curl "$OPENAI_API_URL" \
             --no-buffer \
             --silent \
             --show-error \
