@@ -61,27 +61,31 @@ function echo_type() {
     local text=$1
     local delay=${2:-0.001}
 
-    for (( i=0; i<${#text}; i++ )); do 
-        if [[ "${text:$i:1}" == "\\" ]]; then
-            echo -ne "${text:$i:2}";
-            ((i++))
-        else
-            echo -n "${text:$i:1}";
-        fi
+    if [[ "$delay" == "0" ]]; then
+        echo -ne "$text"
+    else
+        for (( i=0; i<${#text}; i++ )); do 
+            if [[ "${text:$i:1}" == "\\" ]]; then
+                echo -ne "${text:$i:2}";
+                ((i++))
+            else
+                echo -ne "${text:$i:1}";
+            fi
 
-        sleep "$delay"
-    done
+            sleep "$delay"
+        done
+    fi
 
     echo
 }
 
 function show_config() {
-    echo_sys \
-        "--no-indent" \
-        "Here's your configuration:" \
-        "$CODE_BLOCK_SYMBOL" \
-        "$(cat $CONFIG_FILE_PATH)" \
-        "$CODE_BLOCK_SYMBOL"
+    local delay="0"
+
+    echo_sys "Here's your configuration:"
+    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
+    echo_type "$(cat $CONFIG_FILE_PATH)" "$delay"
+    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
 }
 
 function clean_env_config() {
@@ -352,11 +356,15 @@ function help() {
 }
 
 function show_history() {
+    local delay="0"
     echo_sys "Here's your conversation history:"
-
+    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
+    
     while IFS= read -r line || [[ -n "$line" ]]; do
-        echo_type "$line"
+        echo_type "$line" "$delay"
     done < "$HISTORY_FILE_PATH"
+    
+    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
 }
 
 function clear_history() {
