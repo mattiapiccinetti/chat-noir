@@ -361,7 +361,18 @@ function show_history() {
     echo_type "$CODE_BLOCK_SYMBOL" "$delay"
     
     while IFS= read -r line || [[ -n "$line" ]]; do
-        echo_type "$line" "$delay"
+        role=$(echo "$line" | jq -r ".role")
+        content=$(echo "$line" | jq -r ".content")
+
+        if [[ "$role" == "user" ]]; then
+            echo_type "YOU: $content" "$delay"
+        elif [[ "$role" == "assistant" ]]; then
+            echo_type "GPT: $content" "$delay"
+        else
+            echo_type "???: $content" "$delay"
+        fi
+        echo_type "---"
+
     done < "$HISTORY_FILE_PATH"
     
     echo_type "$CODE_BLOCK_SYMBOL" "$delay"
