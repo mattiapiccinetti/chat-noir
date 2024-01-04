@@ -117,7 +117,7 @@ function load_config() {
     fi
 }
 
-function ask_to_reset_config() {
+function ask_reset_config() {
     echo_sys \
         "Your configurations will be reset to default." \
         "Do you want to proceed? [Yes/No] or Enter to skip."
@@ -138,7 +138,7 @@ function ask_to_reset_api_key() {
     read -e -r -p "$(echo_y_n)" reply
     reply=$(to_lower "$reply")
     if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
-        ask_for_openai_api_key
+        ask_openai_api_key
     else
         echo_sys "$SYS_ANSWER"
     fi
@@ -181,7 +181,7 @@ function save_openai_api_key() {
     echo_sys "Your OpenAI API key has been saved."
 }
 
-function ask_for_openai_api_key() {
+function ask_openai_api_key() {
     echo_sys "Please type a valid API key to proceed. [Press Enter to skip]"
     read -e -r -p "$(echo_key)" openai_api_key
     
@@ -195,7 +195,7 @@ function ask_for_openai_api_key() {
 
 function check_and_save_openai_api_key() {
     if [[ -z "$OPENAI_API_KEY" ]]; then
-        ask_for_openai_api_key
+        ask_openai_api_key
     fi
 }
 
@@ -355,7 +355,7 @@ function create_chat() {
         "")         continue ;;
         "/help")        help ;;
         "/config")      show_config ;;
-        "/reset-all")   ask_to_reset_config ;;
+        "/reset-all")   ask_reset_config ;;
         "/reset-key")   ask_to_reset_api_key ;;
         "/welcome")     welcome ;;
         "/exit")        handle_exit ;;
