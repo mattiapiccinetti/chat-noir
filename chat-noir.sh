@@ -13,6 +13,7 @@ readonly CYAN="${ESC_SEQUENCE}36m"
 readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
+readonly SYS_ANSWER="Ok."
 
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
@@ -127,7 +128,19 @@ function ask_to_reset_config() {
     if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
         reset_config
     else
-        echo_sys "Ok, no prob."
+        echo_sys "$SYS_ANSWER"
+    fi
+}
+
+function ask_to_reset_api_key() {
+    echo_sys "Do you want change you OpenAI API key? [Yes/No] or Enter to skip."
+    
+    read -e -r -p "$(echo_y_n)" reply
+    reply=$(to_lower "$reply")
+    if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
+        ask_for_openai_api_key
+    else
+        echo_sys "$SYS_ANSWER"
     fi
 }
 
@@ -149,8 +162,14 @@ function add_config() {
     local name="$1"
     local value="$2"
 
-    echo -e "\n$name=\"$value\"\n" >> $CONFIG_FILE_PATH
+    echo -e "\n$name=\"$value\"\n" >> "$CONFIG_FILE_PATH"
     remove_empty_lines "$CONFIG_FILE_PATH"
+}
+
+function delete_config() {
+    local name="$1"
+    
+    sed -i '' "/^$name/d" "$CONFIG_FILE_PATH"
 }
 
 function save_openai_api_key() {
@@ -162,18 +181,21 @@ function save_openai_api_key() {
     echo_sys "Your OpenAI API key has been saved."
 }
 
+function ask_for_openai_api_key() {
+    echo_sys "Please type a valid API key to proceed. [Press Enter to skip]"
+    read -e -r -p "$(echo_key)" openai_api_key
+    
+    if [[ -n "$openai_api_key" ]]; then
+        delete_config "OPENAI_API_KEY"
+        save_openai_api_key "$openai_api_key"
+    else 
+        echo_sys "$SYS_ANSWER"
+    fi
+}
+
 function check_and_save_openai_api_key() {
     if [[ -z "$OPENAI_API_KEY" ]]; then
-        echo_sys \
-            "It seems you haven't entered your OpenAI API key yet." \
-            "Please type a valid API key to proceed. [Press Enter to skip]"
-         
-        read -e -r -p "$(echo_key)" openai_api_key
-        if [[ -n "$openai_api_key" ]]; then 
-            save_openai_api_key "$openai_api_key"
-        else 
-            echo_sys "Ok, no prob."
-        fi
+        ask_for_openai_api_key
     fi
 }
 
@@ -242,8 +264,9 @@ function handle_chunks() {
     if [[ -n "$error_chunk" ]]; then
         echo_type "$(get_openai_error_message "$error_chunk")"
         
-        [[ "$(get_openai_error_code "$error_chunk")" == "invalid_api_key" ]] && \
-            echo_sys "Type '/reset' to reset all configurations and add a new one."
+        if [[ "$(get_openai_error_code "$error_chunk")" == "invalid_api_key" ]]; then
+            echo_sys "Type '/reset-key' to change your OpenAI API key."
+        fi
     else
         echo ""
         save_message_to_history "assistant" "$data_chunk"
@@ -330,13 +353,14 @@ function create_chat() {
 
         case $user_prompt in
         "")         continue ;;
-        "/help")    help ;;
-        "/config")  show_config ;;
-        "/reset")   ask_to_reset_config ;;
-        "/welcome") welcome ;;
-        "/exit")    handle_exit ;;
-        "/history") show_history ;;
-        *)          get_openai_response "$user_prompt" ;;
+        "/help")        help ;;
+        "/config")      show_config ;;
+        "/reset-all")   ask_to_reset_config ;;
+        "/reset-key")   ask_to_reset_api_key ;;
+        "/welcome")     welcome ;;
+        "/exit")        handle_exit ;;
+        "/history")     show_history ;;
+        *)              get_openai_response "$user_prompt" ;;
         esac
     done
 }
@@ -346,12 +370,13 @@ function help() {
         "--no-indent" \
         "Here's the list of commands:" \
         "" \
-        " /help     Show the help menu" \
-        " /config   Show the custom configurations" \
-        " /reset    Reset the configurations to default" \
-        " /welcome  Show the welcome message" \
-        " /history  Show the conversation history so far as JSON" \
-        " /exit     Exit from the application" \
+        "  /help         Show the help menu" \
+        "  /config       Show the custom configurations" \
+        "  /reset-all    Reset the configurations to default" \
+        "  /reset-key    Reset the OpenAI API key" \
+        "  /welcome      Show the welcome message" \
+        "  /history      Show the conversation history so far as JSON" \
+        "  /exit         Exit from the application" \
         ""
 }
 
