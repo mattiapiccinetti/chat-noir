@@ -25,23 +25,8 @@ function echo_gpt() {
 }
 
 function echo_sys() {
-    local indentation
-    
-    echo -ne "${BOLD}SYS:${RESET_COLOR} "
-    if [[ "$1" == "--no-indent" ]]; then
-        indentation=""
-        shift
-    else
-        indentation="     "
-    fi
-
-    for parameter in "$@"; do
-        if [[ "$parameter" == "$1" ]]; then
-            echo_type "$parameter"
-        else 
-            echo_type "$indentation$parameter"
-        fi
-    done
+    echo -ne "${BOLD}SYS: ${RESET_COLOR}"
+    echo_type "$1"
 }
 
 function echo_ask() {
@@ -82,12 +67,10 @@ function echo_type() {
 }
 
 function show_config() {
-    local delay="0"
-
     echo_sys "Here's your configuration:"
-    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
-    echo_type "$(cat $CONFIG_FILE_PATH)" "$delay"
-    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
+    echo "$CODE_BLOCK_SYMBOL"
+    cat $CONFIG_FILE_PATH
+    echo "$CODE_BLOCK_SYMBOL"
 }
 
 function clean_env_config() {
@@ -370,41 +353,33 @@ function create_chat() {
 }
 
 function help() {
-    echo_sys \
-        "--no-indent" \
-        "Here's the list of commands:" \
-        "" \
-        "  /help         Show the help menu" \
-        "  /config       Show the custom configurations" \
-        "  /reset-all    Reset the configurations to default" \
-        "  /reset-key    Reset the OpenAI API key" \
-        "  /welcome      Show the welcome message" \
-        "  /history      Show the conversation history so far as JSON" \
-        "  /exit         Exit from the application" \
-        ""
+    echo_sys "Here's the list of commands:"
+    echo ""
+    echo "  /help         Show the help menu" 
+    echo "  /config       Show the custom configurations" 
+    echo "  /reset-all    Reset the configurations to default" 
+    echo "  /reset-key    Reset the OpenAI API key" 
+    echo "  /welcome      Show the welcome message" 
+    echo "  /history      Show the conversation history so far as JSON" 
+    echo "  /exit         Exit from the application" 
+    echo ""
 }
 
 function show_history() {
-    local delay="0"
     echo_sys "Here's your conversation history:"
-    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
+    echo "$CODE_BLOCK_SYMBOL"
     
     while IFS= read -r line || [[ -n "$line" ]]; do
-        role=$(echo "$line" | jq -r ".role")
-        content=$(echo "$line" | jq -r ".content")
-
-        if [[ "$role" == "user" ]]; then
-            echo_type "YOU: $content" "$delay"
-        elif [[ "$role" == "assistant" ]]; then
-            echo_type "GPT: $content" "$delay"
-        else
-            echo_type "???: $content" "$delay"
-        fi
-        echo_type "---"
-
+        case "$(echo "$line" | jq -r ".role")" in
+        "user")         role="YOU" ;;
+        "assistant")    role="GPT" ;;
+        *)              role="???" ;;
+        esac
+        
+    echo "$role: $(echo "$line" | jq -r ".content")"
     done < "$HISTORY_FILE_PATH"
     
-    echo_type "$CODE_BLOCK_SYMBOL" "$delay"
+    echo "$CODE_BLOCK_SYMBOL"
 }
 
 function clear_history() {
