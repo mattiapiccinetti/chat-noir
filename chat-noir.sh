@@ -14,6 +14,7 @@ readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
 readonly SYS_ANSWER="Ok."
+readonly NEW_LINE="\n     "
 
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
@@ -117,31 +118,34 @@ function load_config() {
     fi
 }
 
-function ask_reset_config() {
-    echo_sys \
-        "Your configurations will be reset to default." \
-        "Do you want to proceed? [Yes/No] or Enter to skip."
-    
+function ask_and_execute() {
+    local text="$1"
+    local execute_if_yes="$2"
+    local execute_if_no="$3"
+
+    echo_sys "$text"
+        
     read -e -r -p "$(echo_y_n)" reply
     reply=$(to_lower "$reply")
-
     if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
-        reset_config
+        $execute_if_yes
     else
-        echo_sys "$SYS_ANSWER"
+        $execute_if_no
     fi
 }
 
+function ask_reset_config() {
+    ask_and_execute \
+        "Your configurations will be reset to default.${NEW_LINE}Do you want to proceed? [Yes/No] or Enter to skip." \
+        "reset_config" \
+        "echo_sys $SYS_ANSWER"
+}
+
 function ask_to_reset_api_key() {
-    echo_sys "Do you want change you OpenAI API key? [Yes/No] or Enter to skip."
-    
-    read -e -r -p "$(echo_y_n)" reply
-    reply=$(to_lower "$reply")
-    if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
-        ask_openai_api_key
-    else
-        echo_sys "$SYS_ANSWER"
-    fi
+    ask_and_execute \
+        "Do you want change you OpenAI API key? [Yes/No] or Enter to skip." \
+        "ask_openai_api_key" \
+        "echo_sys $SYS_ANSWER"
 }
 
 function remove_empty_lines() {
