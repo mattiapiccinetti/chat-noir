@@ -14,7 +14,7 @@ readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
 readonly SYS_ANSWER="Ok."
-readonly NEW_LINE="\n     "
+readonly TAB="     "
 
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
@@ -119,7 +119,7 @@ function ask_and_execute() {
 
 function ask_reset_config() {
     ask_and_execute \
-        "Your configurations will be reset to default.${NEW_LINE}Do you want to proceed? [Yes/No] or Enter to skip." \
+        "Your configurations will be reset to default.\n${TAB}Do you want to proceed? [Yes/No] or Enter to skip." \
         "reset_config" \
         "echo_sys $SYS_ANSWER"
 }
