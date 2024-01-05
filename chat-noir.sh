@@ -359,19 +359,15 @@ function create_chat_completions() {
 function get_openai_response() {
     local content=$1
     
-    check_and_save_openai_api_key
     save_message_to_history "user" "$content"
     echo_gpt ""
     create_chat_completions "$content"
 }
 
-function create_chat() {
-    while true
-    do
-        read -e -r -p "$(echo_you)" user_prompt
-
-        case $user_prompt in
-        "")         continue ;;
+function handle_commands() {
+    local command="$1"
+    
+    case "$command" in
         "/help")        help ;;
         "/config")      show_config ;;
         "/reset-all")   ask_reset_config ;;
@@ -380,7 +376,18 @@ function create_chat() {
         "/welcome")     welcome ;;
         "/exit")        handle_exit ;;
         "/history")     show_history ;;
-        *)              get_openai_response "$user_prompt" ;;
+        *)              help ;;
+    esac
+}
+
+function create_chat() {
+    while true
+    do
+        read -e -r -p "$(echo_you)" user_message
+        case "$user_message" in
+            "")     continue ;;
+            "/"*)   handle_commands "$user_message" ;;
+            *)      get_openai_response "$user_message" ;;
         esac
     done
 }
@@ -405,9 +412,9 @@ function show_history() {
     
     while IFS= read -r line || [[ -n "$line" ]]; do
         case "$(echo "$line" | jq -r ".role")" in
-        "user")         role="YOU" ;;
-        "assistant")    role="GPT" ;;
-        *)              role="???" ;;
+            "user")         role="YOU" ;;
+            "assistant")    role="GPT" ;;
+            *)              role="???" ;;
         esac
         
     echo "$role: $(echo "$line" | jq -r ".content")"
