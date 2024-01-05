@@ -126,8 +126,15 @@ function ask_reset_config() {
 
 function ask_to_reset_api_key() {
     ask_and_execute \
-        "Do you want change you OpenAI API key? [Yes/No] or Enter to skip." \
+        "Do you want change your OpenAI API key? [Yes/No] or Enter to skip." \
         "ask_openai_api_key" \
+        "echo_sys $SYS_ANSWER"
+}
+
+function ask_to_reset_model() {
+    ask_and_execute \
+        "Do you want change your current OpenAI model? [Yes/No] or Enter to skip." \
+        "ask_openai_model" \
         "echo_sys $SYS_ANSWER"
 }
 
@@ -168,13 +175,34 @@ function save_openai_api_key() {
     echo_sys "Your OpenAI API key has been saved."
 }
 
+function save_openai_model() {
+    local model="$1"
+    
+    add_config "OPENAI_MODEL" "$model"
+    OPENAI_MODEL="$model"
+    
+    echo_sys "Your OpenAI model has been saved."
+}
+
 function ask_openai_api_key() {
-    echo_sys "Please type a valid API key to proceed. [Press Enter to skip]"
+    echo_sys "Please type a valid OpenAI API key to proceed. [Press Enter to skip]"
     read -e -r -p "$(echo_key)" openai_api_key
     
     if [[ -n "$openai_api_key" ]]; then
         delete_config "OPENAI_API_KEY"
         save_openai_api_key "$openai_api_key"
+    else 
+        echo_sys "$SYS_ANSWER"
+    fi
+}
+
+function ask_openai_model() {
+    echo_sys "Please type a valid OpenAI model. [Press Enter to skip]"
+    read -e -r -p "$(echo_ask "mdl")" openai_model
+    
+    if [[ -n "$openai_model" ]]; then
+        delete_config "OPENAI_MODEL"
+        save_openai_model "$openai_model"
     else 
         echo_sys "$SYS_ANSWER"
     fi
@@ -234,6 +262,7 @@ function handle_chunks() {
     local completion_chunk
     local data_chunk
     local error_chunk
+    local openai_error_code
     
     while read -r chunk; do
         if [[ $chunk == "data: "* ]]; then
@@ -249,10 +278,13 @@ function handle_chunks() {
     done
 
     if [[ -n "$error_chunk" ]]; then
-        echo_type "$(get_openai_error_message "$error_chunk")"
+        openai_error_code=$(get_openai_error_code "$error_chunk")
+        echo_type "$(get_openai_error_message "$error_chunk") [$openai_error_code]"
         
-        if [[ "$(get_openai_error_code "$error_chunk")" == "invalid_api_key" ]]; then
+        if [[ "$openai_error_code" == "invalid_api_key" ]]; then
             echo_sys "Type '/reset-key' to change your OpenAI API key."
+        elif [[ "$openai_error_code" == "model_not_found" ]]; then
+            echo_sys "Type '/reset-model' to change your OpenAI model."
         fi
     else
         echo ""
@@ -344,6 +376,7 @@ function create_chat() {
         "/config")      show_config ;;
         "/reset-all")   ask_reset_config ;;
         "/reset-key")   ask_to_reset_api_key ;;
+        "/reset-model") ask_to_reset_model ;;
         "/welcome")     welcome ;;
         "/exit")        handle_exit ;;
         "/history")     show_history ;;
@@ -355,13 +388,14 @@ function create_chat() {
 function help() {
     echo_sys "Here's the list of commands:"
     echo ""
-    echo "  /help         Show the help menu" 
-    echo "  /config       Show the custom configurations" 
-    echo "  /reset-all    Reset the configurations to default" 
-    echo "  /reset-key    Reset the OpenAI API key" 
-    echo "  /welcome      Show the welcome message" 
-    echo "  /history      Show the conversation history so far as JSON" 
-    echo "  /exit         Exit from the application" 
+    echo "  /help           Show the help menu" 
+    echo "  /config         Show the custom configurations" 
+    echo "  /reset-all      Reset the configurations to default" 
+    echo "  /reset-key      Reset the OpenAI API key"
+    echo "  /reset-model    Reset the OpenAI model" 
+    echo "  /welcome        Show the welcome message" 
+    echo "  /history        Show the conversation history so far as JSON" 
+    echo "  /exit           Exit from the application" 
     echo ""
 }
 
