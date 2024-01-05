@@ -16,6 +16,11 @@ readonly BOLD="${ESC_SEQUENCE}1m"
 readonly SYS_ANSWER="Ok."
 readonly TAB="     "
 
+function map() {
+    read -r x
+    $1 "$x"
+}
+
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
 }
@@ -139,9 +144,7 @@ function ask_to_reset_model() {
 }
 
 function remove_empty_lines() {
-    local filename="$1"
-
-    sed -i '' -e '/^\s*$/d' "$filename"
+    sed -i '' -e '/^\s*$/d' "$1"
 }
 
 function to_lower() {
@@ -221,41 +224,24 @@ function get_data_content_from_chunk() {
 function remove_first_last() {
     local data="$1"
     
-    echo "${data:1:${#data}-2}"
-}
-
-function remove_double_quotes() {
-    local data="$1"
-
-    echo "${data//\\\"/\"}"
+    echo -ne "${data:1:${#data}-2}"
 }
 
 function echo_completion_chunk() {
-    local completion_chunk="$1"
-    local response
-
-    response=$(get_data_content_from_chunk "$completion_chunk") 
-    response=$(remove_first_last "$response")
-    response=$(remove_double_quotes "$response")
-    
-    echo -ne "$response"
+    get_data_content_from_chunk "$1" \
+        | map "remove_first_last"
 }
 
 function get_openai_error_message() {
-    local error_message
-    
-    error_message=$(echo "$1" | jq -c -e "select(.error.message != null) | .error.message")
-    error_message=$(remove_first_last "$error_message")
-    echo "$error_message"
+    echo "$1" \
+        | jq -c -e "select(.error.message != null) | .error.message" \
+        | map "remove_first_last"
 }
 
 function get_openai_error_code() {
-    local error_code
-    
-    error_code=$(echo "$1" | jq -c -e "select(.error.code != null) | .error.code")
-    error_code=$(remove_first_last "$error_code")
-
-    echo "$error_code"
+    echo "$1" \
+        | jq -c -e "select(.error.code != null) | .error.code" \
+        | map "remove_first_last"
 }
 
 function handle_chunks() {
