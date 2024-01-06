@@ -354,15 +354,16 @@ function handle_commands() {
     local command="$1"
     
     case "$command" in
-        "/help")        help ;;
-        "/config")      show_config ;;
-        "/reset-all")   ask_reset_config ;;
-        "/reset-key")   ask_to_reset_api_key ;;
-        "/reset-model") ask_to_reset_model ;;
-        "/welcome")     welcome ;;
-        "/exit")        handle_exit ;;
-        "/history")     show_history ;;
-        *)              help ;;
+        "/help")            help ;;
+        "/config")          show_config ;;
+        "/reset-all")       ask_reset_config ;;
+        "/reset-key")       ask_to_reset_api_key ;;
+        "/reset-model")     ask_to_reset_model ;;
+        "/welcome")         welcome ;;
+        "/exit")            handle_exit ;;
+        "/history")         show_history ;;
+        "/clear-history")   clear_history && echo_sys "Done." ;;
+        *)                  help ;;
     esac
 }
 
@@ -381,14 +382,15 @@ function create_chat() {
 function help() {
     echo_sys "Here's the list of commands:"
     echo ""
-    echo "  /help           Show the help menu" 
-    echo "  /config         Show the custom configurations" 
-    echo "  /reset-all      Reset the configurations to default" 
-    echo "  /reset-key      Reset the OpenAI API key"
-    echo "  /reset-model    Reset the OpenAI model" 
-    echo "  /welcome        Show the welcome message" 
-    echo "  /history        Show the conversation history so far as JSON" 
-    echo "  /exit           Exit from the application" 
+    echo "  /help             Show the help menu"
+    echo "  /welcome          Show the welcome message"
+    echo "  /config           Show the custom configurations"
+    echo "  /reset-key        Reset the OpenAI API key"
+    echo "  /reset-model      Reset the OpenAI model"
+    echo "  /reset-all        Reset the configurations to default"    
+    echo "  /history          Show the conversation history"
+    echo "  /clear-history    Clear the conversation history"
+    echo "  /exit             Exit from the application"
     echo ""
 }
 
