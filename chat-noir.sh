@@ -129,14 +129,14 @@ function ask_reset_config() {
         "echo_sys $SYS_ANSWER"
 }
 
-function ask_to_reset_api_key() {
+function ask_reset_api_key() {
     ask_and_execute \
         "Do you want change your OpenAI API key? [Yes/No] or Enter to skip." \
         "ask_openai_api_key" \
         "echo_sys $SYS_ANSWER"
 }
 
-function ask_to_reset_model() {
+function ask_reset_model() {
     ask_and_execute \
         "Do you want change your current OpenAI model? [Yes/No] or Enter to skip." \
         "ask_openai_model" \
@@ -365,8 +365,8 @@ function handle_commands() {
         "/help")            help ;;
         "/config")          show_config ;;
         "/reset-all")       ask_reset_config ;;
-        "/reset-key")       ask_to_reset_api_key ;;
-        "/reset-model")     ask_to_reset_model ;;
+        "/reset-key")       ask_reset_api_key ;;
+        "/reset-model")     ask_reset_model ;;
         "/welcome")         welcome ;;
         "/exit")            handle_exit ;;
         "/history")         show_history ;;
