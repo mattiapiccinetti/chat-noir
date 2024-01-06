@@ -244,10 +244,21 @@ function get_openai_error_code() {
         | map "remove_first_last"
 }
 
+function get_suggestion() {
+    local openai_error_code="$1"
+    
+    if [[ "$openai_error_code" == "invalid_api_key" ]]; then
+        echo "Type '/reset-key' to change your OpenAI API key."
+    elif [[ "$openai_error_code" == "model_not_found" ]]; then
+        echo "Type '/reset-model' to change your OpenAI model."
+    fi
+}
+
 function handle_chunks() {
     local completion_chunk
     local data_chunk
     local error_chunk
+    local openai_error_message
     local openai_error_code
     
     while read -r chunk; do
@@ -265,13 +276,10 @@ function handle_chunks() {
 
     if [[ -n "$error_chunk" ]]; then
         openai_error_code=$(get_openai_error_code "$error_chunk")
-        echo_type "$(get_openai_error_message "$error_chunk") [$openai_error_code]"
+        openai_error_message=$(get_openai_error_message "$error_chunk")
         
-        if [[ "$openai_error_code" == "invalid_api_key" ]]; then
-            echo_sys "Type '/reset-key' to change your OpenAI API key."
-        elif [[ "$openai_error_code" == "model_not_found" ]]; then
-            echo_sys "Type '/reset-model' to change your OpenAI model."
-        fi
+        echo_type "$openai_error_message [$openai_error_code]"
+        echo_sys "$(get_suggestion "$openai_error_code")"
     else
         echo ""
         save_message_to_history "assistant" "$data_chunk"
