@@ -131,14 +131,14 @@ function ask_reset_config() {
 
 function ask_reset_api_key() {
     ask_and_execute \
-        "Do you want change your OpenAI API key? [Yes/No] or Enter to skip." \
+        "Do you want to change your OpenAI API key? [Yes/No] or Enter to skip." \
         "ask_openai_api_key" \
         "echo_sys $SYS_ANSWER"
 }
 
 function ask_reset_model() {
     ask_and_execute \
-        "Do you want change your current OpenAI model? [Yes/No] or Enter to skip." \
+        "Do you want to change your current OpenAI model? [Yes/No] or Enter to skip." \
         "ask_openai_model" \
         "echo_sys $SYS_ANSWER"
 }
