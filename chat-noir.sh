@@ -289,7 +289,6 @@ function handle_chunks() {
 function welcome() {
     echo
     echo -e "  :: Welcome to ${BOLD}$APPLICATION_NAME $APPLICATION_VERSION${RESET_COLOR}."
-    echo -e "  :: This application is made by Peach of Persia."
     echo -e "  :: Type \"/help\" for more information."
     echo -e "  :: Press CTRL+C to exit."
     echo
