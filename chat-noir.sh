@@ -436,12 +436,7 @@ function handle_exit() {
 function main() {
     welcome
     init
-    
-    if [[ $# -gt 0 ]]; then
-        create_chat_completions "$1"
-    else
-        create_chat
-    fi
+    create_chat
 }
 
 trap "echo; handle_exit" SIGINT SIGTERM
