@@ -224,12 +224,24 @@ function get_data_content_from_chunk() {
 function remove_first_last() {
     local data="$1"
     
-    echo -ne "${data:1:${#data}-2}"
+    echo "${data:1:${#data}-2}"
+}
+
+function remove_double_quotes() {
+    local data="$1"
+
+    echo "${data//\\\"/\"}"
 }
 
 function echo_completion_chunk() {
-    get_data_content_from_chunk "$1" \
-        | map "remove_first_last"
+    local completion_chunk="$1"
+    local response
+
+    response=$(get_data_content_from_chunk "$completion_chunk") 
+    response=$(remove_first_last "$response")
+    response=$(remove_double_quotes "$response")
+    
+    echo -ne "$response"
 }
 
 function get_openai_error_message() {
