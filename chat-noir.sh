@@ -245,15 +245,11 @@ function echo_completion_chunk() {
 }
 
 function get_openai_error_message() {
-    echo "$1" \
-        | jq -c -e "select(.error.message != null) | .error.message" \
-        | map "remove_first_last"
+    echo "$1" | jq -c -e -r "select(.error.message != null) | .error.message" 
 }
 
 function get_openai_error_code() {
-    echo "$1" \
-        | jq -c -e "select(.error.code != null) | .error.code" \
-        | map "remove_first_last"
+    echo "$1" | jq -c -e -r "select(.error.code != null) | .error.code" 
 }
 
 function get_suggestion() {
