@@ -133,14 +133,14 @@ function ask_reset_config() {
 function ask_reset_api_key() {
     ask_and_execute \
         "Do you want to change your OpenAI API key? [Yes/No] or Enter to skip." \
-        "ask_openai_api_key" \
+        "input_openai_api_key" \
         "echo_sys $SYS_ANSWER"
 }
 
 function ask_reset_model() {
     ask_and_execute \
         "Do you want to change your current OpenAI model? [Yes/No] or Enter to skip." \
-        "ask_openai_model" \
+        "input_openai_model" \
         "echo_sys $SYS_ANSWER"
 }
 
@@ -188,7 +188,7 @@ function save_openai_model() {
     echo_sys "Your OpenAI model has been saved."
 }
 
-function ask_openai_api_key() {
+function input_openai_api_key() {
     echo_sys "Please type a valid OpenAI API key to proceed. [Press Enter to skip]"
     read -e -r -p "$(echo_key)" openai_api_key
     
@@ -200,7 +200,7 @@ function ask_openai_api_key() {
     fi
 }
 
-function ask_openai_model() {
+function input_openai_model() {
     echo_sys "Please type a valid OpenAI model. [Press Enter to skip]"
     read -e -r -p "$(echo_ask "mdl")" openai_model
     
@@ -214,7 +214,7 @@ function ask_openai_model() {
 
 function check_and_save_openai_api_key() {
     if [[ -z "$OPENAI_API_KEY" ]]; then
-        ask_openai_api_key
+        input_openai_api_key
     fi
 }
 
