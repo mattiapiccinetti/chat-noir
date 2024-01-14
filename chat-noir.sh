@@ -17,7 +17,8 @@ readonly SYS_ANSWER="Ok."
 readonly TAB="     "
 
 function map() {
-    read -r x
+    IFS= read -r -e x
+    
     $1 "$x"
 }
 
@@ -221,27 +222,39 @@ function get_data_content_from_chunk() {
     echo "$1" | jq -c -e "select(.choices[].delta.content != null) | .choices[].delta.content"
 }
 
-function remove_first_last() {
+function remove_first_char() {
     local data="$1"
     
-    echo "${data:1:${#data}-2}"
+    if [[ -n "$data" ]]; then
+        echo "${data:1}"
+    else
+        echo "$data"
+    fi
 }
 
-function remove_double_quotes() {
+function remove_last_char() {
+    local data="$1"
+    
+    if [[ -n "$data" ]]; then
+        echo "${data:0:${#data} - 1}"
+    else
+        echo "$data"
+    fi
+}
+
+function unescape_double_quotes() {
     local data="$1"
 
     echo "${data//\\\"/\"}"
 }
 
 function echo_completion_chunk() {
-    local completion_chunk="$1"
-    local response
-
-    response=$(get_data_content_from_chunk "$completion_chunk") 
-    response=$(remove_first_last "$response")
-    response=$(remove_double_quotes "$response")
-    
-    echo -ne "$response"
+    echo "$1" \
+        | map get_data_content_from_chunk \
+        | map remove_first_char \
+        | map remove_last_char \
+        | map unescape_double_quotes \
+        | map "echo -ne"
 }
 
 function get_openai_error_message() {
