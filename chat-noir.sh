@@ -30,6 +30,10 @@ function require_no_blanks() {
     fi
 }
 
+function is_not_empty() {
+    [[ -z "$1" ]] && return 1
+}
+
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
 }
@@ -92,7 +96,7 @@ function clean_env_config() {
     local old_IFS=$IFS
 
     while IFS='=' read -r key _ ; do
-        [[ -n "$key" ]] && unset "$key"
+        is_not_empty "$key" && unset "$key"
     done < "$file_path"
 
     IFS=$old_IFS
@@ -133,8 +137,7 @@ function ask_reset_config() {
     # shellcheck disable=SC2015
     ask "Your configurations will be reset to default.\n${TAB}Do you want to proceed? [Yes/No] or Enter to skip." \
         && reset_config \
-        || echo_sys "$SYS_ANSWER"
-    
+        || echo_sys "$SYS_ANSWER"    
 }
 
 function ask_reset_api_key() {
@@ -184,7 +187,7 @@ function input_config() {
     echo_sys "Please type a valid $config_friendly_name to proceed. [Press Enter to skip]"
     read -e -r -p "$(echo_ask "cfg")" value
     
-    if [[ -n "$value" ]]; then
+    if is_not_empty "$value"; then
         if require_no_blanks "$value"; then
             config_key_name=$(to_upper "$config_key_name")
             delete_config "$config_key_name"
@@ -222,7 +225,7 @@ function get_data_content_from_chunk() {
 function remove_first_char() {
     local data="$1"
     
-    if [[ -n "$data" ]]; then
+    if is_not_empty "$data"; then
         echo "${data:1}"
     else
         echo "$data"
@@ -232,7 +235,7 @@ function remove_first_char() {
 function remove_last_char() {
     local data="$1"
     
-    if [[ -n "$data" ]]; then
+    if is_not_empty "$data"; then
         echo "${data:0:${#data} - 1}"
     else
         echo "$data"
@@ -292,7 +295,7 @@ function handle_chunks() {
         fi
     done
 
-    if [[ -n "$error_chunk" ]]; then
+    if is_not_empty "$error_chunk"; then
         openai_error_code=$(get_openai_error_code "$error_chunk")
         openai_error_message=$(get_openai_error_message "$error_chunk")
         
@@ -344,7 +347,7 @@ function create_openai_payload_from_history() {
     local openai_json_payload
     
     openai_json_payload=$(get_base_openai_payload)
-    while IFS= read -r json_message || [[ -n "$json_message" ]]; do
+    while IFS= read -r json_message || is_not_empty "$json_message"; do
         openai_json_payload=$(
             echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
     done < "$HISTORY_FILE_PATH"
@@ -423,7 +426,7 @@ function show_history() {
     echo_sys "Here's your conversation history:"
     echo "$CODE_BLOCK_SYMBOL"
     
-    while IFS= read -r line || [[ -n "$line" ]]; do
+    while IFS= read -r line || is_not_empty "$line"; do
         case "$(echo "$line" | jq -r ".role")" in
             "user")         role="YOU" ;;
             "assistant")    role="GPT" ;;
