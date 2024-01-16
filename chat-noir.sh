@@ -22,6 +22,14 @@ function map() {
     $1 "$x"
 }
 
+function require_no_blanks() {
+    local text="$1"
+
+    if echo "$text" | grep -q " "; then
+        return 1
+    fi
+}
+
 function echo_you() {
     echo -ne "${CYAN}YOU: ${RESET_COLOR}"
 }
@@ -170,45 +178,35 @@ function delete_config() {
     sed -i '' "/^$name/d" "$CONFIG_FILE_PATH"
 }
 
-function save_openai_api_key() {
-    local key="$1"
+function input_config() {
+    local config_key_name="$1"
+    local config_friendly_name="$2"
     
-    add_config "OPENAI_API_KEY" "$key"
-    OPENAI_API_KEY="$key"
+    echo_sys "Please type a valid $config_friendly_name to proceed. [Press Enter to skip]"
+    read -e -r -p "$(echo_ask "cfg")" value
     
-    echo_sys "Your OpenAI API key has been saved."
-}
-
-function save_openai_model() {
-    local model="$1"
-    
-    add_config "OPENAI_MODEL" "$model"
-    OPENAI_MODEL="$model"
-    
-    echo_sys "Your OpenAI model has been saved."
+    if [[ -n "$value" ]]; then
+        if require_no_blanks "$value"; then
+            config_key_name=$(to_upper "$config_key_name")
+            delete_config "$config_key_name"
+            add_config "$config_key_name" "$value"
+            eval "$config_key_name=$value"
+        else
+            echo_sys "$config_friendly_name cannot contain blank spaces."
+            return 1
+        fi
+    fi
 }
 
 function input_openai_api_key() {
-    echo_sys "Please type a valid OpenAI API key to proceed. [Press Enter to skip]"
-    read -e -r -p "$(echo_key)" openai_api_key
-    
-    if [[ -n "$openai_api_key" ]]; then
-        delete_config "OPENAI_API_KEY"
-        save_openai_api_key "$openai_api_key"
-    else 
-        echo_sys "$SYS_ANSWER"
+    if input_config "OPENAI_API_KEY" "OpenAI API key"; then
+        echo_sys "Your OpenAI API key has been saved."
     fi
 }
 
 function input_openai_model() {
-    echo_sys "Please type a valid OpenAI model. [Press Enter to skip]"
-    read -e -r -p "$(echo_ask "mdl")" openai_model
-    
-    if [[ -n "$openai_model" ]]; then
-        delete_config "OPENAI_MODEL"
-        save_openai_model "$openai_model"
-    else 
-        echo_sys "$SYS_ANSWER"
+    if input_config "OPENAI_MODEL" "OpenAI model"; then
+        echo_sys "Your OpenAI model has been saved."
     fi
 }
 
