@@ -115,41 +115,40 @@ function load_config() {
     fi
 }
 
-function ask_and_execute() {
+function ask() {
     local text="$1"
-    local execute_if_yes="$2"
-    local execute_if_no="$3"
 
     echo_sys "$text"
         
     read -e -r -p "$(echo_y_n)" reply
     reply=$(to_lower "$reply")
     if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
-        $execute_if_yes
+        return 0
     else
-        $execute_if_no
+        return 1
     fi
 }
 
 function ask_reset_config() {
-    ask_and_execute \
-        "Your configurations will be reset to default.\n${TAB}Do you want to proceed? [Yes/No] or Enter to skip." \
-        "reset_config" \
-        "echo_sys $SYS_ANSWER"
+    # shellcheck disable=SC2015
+    ask "Your configurations will be reset to default.\n${TAB}Do you want to proceed? [Yes/No] or Enter to skip." \
+        && reset_config \
+        || echo_sys "$SYS_ANSWER"
+    
 }
 
 function ask_reset_api_key() {
-    ask_and_execute \
-        "Do you want to change your OpenAI API key? [Yes/No] or Enter to skip." \
-        "input_openai_api_key" \
-        "echo_sys $SYS_ANSWER"
+    # shellcheck disable=SC2015
+    ask "Do you want to change the OpenAI API key? [Yes/No] or Enter to skip." \
+        && input_openai_api_key \
+        || echo_sys "$SYS_ANSWER"
 }
 
 function ask_reset_model() {
-    ask_and_execute \
-        "Do you want to change your current OpenAI model? [Yes/No] or Enter to skip." \
-        "input_openai_model" \
-        "echo_sys $SYS_ANSWER"
+    # shellcheck disable=SC2015
+    ask "Do you want to change the OpenAI model? [Yes/No] or Enter to skip." \
+        && input_openai_model \
+        || echo_sys "$SYS_ANSWER"
 }
 
 function remove_empty_lines() {
