@@ -398,7 +398,7 @@ function handle_commands() {
 function create_chat() {
     while true
     do
-        read -e -r -p "$(echo_you)" user_message
+        read -r -p "$(echo_you)" user_message
         case "$user_message" in
             "")     continue ;;
             "/"*)   handle_commands "$user_message" ;;
