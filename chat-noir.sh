@@ -22,16 +22,16 @@ function map() {
     $1 "$x"
 }
 
-function require_no_blanks() {
-    local text="$1"
-
-    if echo "$text" | grep -q " "; then
+function has_no_blanks() {
+    if [[ "$1" =~ " " ]]; then
         return 1
     fi
 }
 
 function is_not_empty() {
-    [[ -z "$1" ]] && return 1
+    if [[ -z "$1" ]]; then
+        return 1
+    fi
 }
 
 function echo_you() {
@@ -126,9 +126,7 @@ function ask() {
         
     read -e -r -p "$(echo_y_n)" reply
     reply=$(to_lower "$reply")
-    if [[ "$reply" == "y" ]] || [[ "$reply" == "yes" ]]; then
-        return 0
-    else
+    if [[ "$reply" != "y" ]] && [[ "$reply" != "yes" ]]; then
         return 1
     fi
 }
@@ -188,7 +186,7 @@ function input_config() {
     read -e -r -p "$(echo_ask "cfg")" value
     
     if is_not_empty "$value"; then
-        if require_no_blanks "$value"; then
+        if has_no_blanks "$value"; then
             config_key_name=$(to_upper "$config_key_name")
             delete_config "$config_key_name"
             add_config "$config_key_name" "$value"
@@ -197,6 +195,8 @@ function input_config() {
             echo_sys "$config_friendly_name cannot contain blank spaces."
             return 1
         fi
+    else
+        return 1
     fi
 }
 
