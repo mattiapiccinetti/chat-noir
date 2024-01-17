@@ -54,14 +54,6 @@ function echo_ask() {
     echo -ne "${YELLOW}$content: ${RESET_COLOR}"
 }
 
-function echo_y_n() {
-    echo_ask "y/n"
-}
-
-function echo_key() {
-    echo_ask "key"
-}
-
 function echo_type() {
     local text=$1
     local delay=${2:-0.001}
@@ -121,10 +113,9 @@ function load_config() {
 
 function ask() {
     local text="$1"
-
-    echo_sys "$text"
-        
-    read -e -r -p "$(echo_y_n)" reply
+    
+    echo_sys "$text"    
+    read -e -r -p "$(echo_ask "y/n")" reply
     reply=$(to_lower "$reply")
     if [[ "$reply" != "y" ]] && [[ "$reply" != "yes" ]]; then
         return 1
