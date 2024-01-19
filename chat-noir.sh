@@ -268,12 +268,22 @@ function get_suggestion() {
     fi
 }
 
+function handle_openai_error() {
+    local error_chunk="$1"
+    local openai_error_message
+    local openai_error_code
+
+    openai_error_code=$(get_openai_error_code "$error_chunk")
+    openai_error_message=$(get_openai_error_message "$error_chunk")
+    
+    echo_type "$openai_error_message [$openai_error_code]"
+    echo_sys "$(get_suggestion "$openai_error_code")"
+}
+
 function handle_openai_chunks() {
     local completion_chunk
     local data_chunk
     local error_chunk
-    local openai_error_message
-    local openai_error_code
     
     while IFS= read -r chunk; do
         if [[ $chunk == "data: "* ]]; then
@@ -288,11 +298,7 @@ function handle_openai_chunks() {
     done
 
     if is_not_empty "$error_chunk"; then
-        openai_error_code=$(get_openai_error_code "$error_chunk")
-        openai_error_message=$(get_openai_error_message "$error_chunk")
-        
-        echo_type "$openai_error_message [$openai_error_code]"
-        echo_sys "$(get_suggestion "$openai_error_code")"
+        handle_openai_error "$error_chunk"
     else
         echo ""
         save_message_to_history "assistant" "$data_chunk"
