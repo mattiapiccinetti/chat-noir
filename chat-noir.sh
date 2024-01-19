@@ -340,14 +340,21 @@ function get_base_openai_payload() {
         '{"model": $OPENAI_MODEL, "messages": [{"role":"system", "content": $OPENAI_ROLE_SYSTEM_CONTENT}], "stream": true}'
 }
 
+function append_openai_json_message() {
+    local base_openai_json_payload="$1"
+    local json_message="$2"
+
+    echo "$base_openai_json_payload" \
+        | jq --argjson json_message "$json_message" '.messages += [$json_message]'
+}
+
 function create_openai_payload_from_history() {
     local content="$1"
     local openai_json_payload
     
     openai_json_payload=$(get_base_openai_payload)
     while IFS= read -r json_message || is_not_empty "$json_message"; do
-        openai_json_payload=$(
-            echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
+        openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
     done < "$HISTORY_FILE_PATH"
 
     echo "$openai_json_payload" | jq -c .
