@@ -268,7 +268,7 @@ function get_suggestion() {
     fi
 }
 
-function handle_chunks() {
+function handle_openai_chunks() {
     local completion_chunk
     local data_chunk
     local error_chunk
@@ -351,11 +351,11 @@ function create_chat_completions() {
     local content="$1"
     
     if [[ "$OFFLINE_MODE" == true ]]; then 
-        fake_openai_request | handle_chunks
+        fake_openai_request | handle_openai_chunks
     else    
         create_openai_payload_from_history "$content" \
             | map make_openai_request \
-            | handle_chunks
+            | handle_openai_chunks
     fi
 }
 
