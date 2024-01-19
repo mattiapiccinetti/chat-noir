@@ -17,9 +17,11 @@ readonly SYS_ANSWER="Ok."
 readonly TAB="     "
 
 function map() {
-    IFS= read -r -e x
+    local function_name="$1"
     
-    $1 "$x"
+    while IFS= read -r -e parameter; do
+        $function_name "$parameter"
+    done
 }
 
 function has_no_blanks() {
@@ -273,10 +275,9 @@ function handle_chunks() {
     local openai_error_message
     local openai_error_code
     
-    while read -r chunk; do
+    while IFS= read -r chunk; do
         if [[ $chunk == "data: "* ]]; then
             completion_chunk=${chunk#data: }
-            
             if echo "$completion_chunk" | jq -e . >/dev/null 2>&1; then
                 data_chunk+=$(echo_completion_chunk "$completion_chunk")
                 echo_completion_chunk "$completion_chunk"
@@ -343,22 +344,35 @@ function create_openai_payload_from_history() {
             echo "$openai_json_payload" | jq --argjson json_message "$json_message" '.messages += [$json_message]')
     done < "$HISTORY_FILE_PATH"
 
-    echo "$openai_json_payload"
+    echo "$openai_json_payload" | jq -c .
 }
 
 function create_chat_completions() {
     local content="$1"
-    local openai_json_payload
     
-    openai_json_payload=$(create_openai_payload_from_history "$content")
+    if [[ "$OFFLINE_MODE" == true ]]; then 
+        fake_openai_request | handle_chunks
+    else    
+        create_openai_payload_from_history "$content" \
+            | map make_openai_request \
+            | handle_chunks
+    fi
+}
+
+function make_openai_request() {
+    local payload="$1"
+    
     curl "$OPENAI_API_URL" \
-            --no-buffer \
-            --silent \
-            --show-error \
-            --header "Content-Type: application/json" \
-            --header "Authorization: Bearer $OPENAI_API_KEY" \
-            --data "$openai_json_payload" \
-        | handle_chunks
+                --no-buffer \
+                --silent \
+                --show-error \
+                --header "Content-Type: application/json" \
+                --header "Authorization: Bearer $OPENAI_API_KEY" \
+                --data "$payload"
+}
+
+function fake_openai_request() {
+    cat "fake_openai_response"
 }
 
 function get_openai_response() {
@@ -387,6 +401,8 @@ function handle_commands() {
 }
 
 function create_chat() {
+    [[ "$OFFLINE_MODE" == true ]] && echo_sys "The offline mode is enabled."
+    
     while true
     do
         read -r -p "$(echo_you)" user_message
