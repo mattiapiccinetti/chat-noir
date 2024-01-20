@@ -297,28 +297,21 @@ function get_openai_error_code() {
 function get_suggestion() {
     local openai_error_code="$1"
     
-    if [[ "$openai_error_code" == "invalid_api_key" ]]; then
-        echo "Type '/set-key' to change your OpenAI API key."
-    elif [[ "$openai_error_code" == "model_not_found" ]]; then
-        echo "Type '/set-model' to change your OpenAI model."
-    fi
+    case "$openai_error_code" in
+        "invalid_api_key")  echo "Type \"/set key\" to change your OpenAI API key." ;;
+        "model_not_found")  echo "Type \"/set model\" to change your OpenAI model." ;;
+        *)                  echo "Type \"/help\" for more information." ;;
+    esac
 }
 
 function handle_openai_error() {
     local error_chunk="$1"
-    local openai_error_message
-    local openai_error_code
     
-    openai_error_code=$(get_openai_error_code "$error_chunk")
-    openai_error_message=$(get_openai_error_message "$error_chunk")
-    
-    if [[ -n "$openai_error_code" ]]; then
-        echo_type "$openai_error_message [$openai_error_code]"
-    else
-        echo_type "$openai_error_message"
-    fi
+    get_openai_error_message "$error_chunk" \
+        | map echo_type
 
-    get_suggestion "$openai_error_code" \
+    get_openai_error_code "$error_chunk" \
+        | map get_suggestion \
         | map echo_sys
 }
 
@@ -473,19 +466,22 @@ function create_chat() {
 
 function help() {
     echo_sys "Here's the list of commands:"
-    echo ""
+    echo 
     echo "  /help             Show the help menu"
     echo "  /welcome          Show the welcome message"
     echo "  /config           Show the custom configurations"
+    echo 
     echo "  /set key          Set the OpenAI API key"
     echo "  /set model        Set the OpenAI API model"
+    echo
     echo "  /reset key        Reset the OpenAI API key to default"
     echo "  /reset model      Reset the OpenAI model to default"
     echo "  /reset all        Reset the configurations to default"    
+    echo 
     echo "  /history          Show the conversation history"
     echo "  /clear history    Clear the conversation history"
     echo "  /exit             Exit from the application"
-    echo ""
+    echo 
 }
 
 function show_history() {
