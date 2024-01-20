@@ -13,7 +13,8 @@ readonly CYAN="${ESC_SEQUENCE}36m"
 readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
-readonly SYS_ANSWER="Ok."
+readonly SYS_MESSAGE_NOOP="Ok."
+readonly SYS_MESSAGE_DONE="Done."
 
 function map() {
     local function_name="$1"
@@ -98,9 +99,7 @@ function clean_env_config() {
 function reset_config() {
     clean_env_config $CONFIG_FILENAME 
     cp "$DEFAULT_CONFIG_FILENAME" $CONFIG_FILENAME
-    load_config        
-    
-    echo_sys "Your configurations have been reset to default."
+    load_config
 }
 
 function reset_openai_api_key() {
@@ -140,21 +139,24 @@ function ask_reset_config() {
     # shellcheck disable=SC2015
     ask "Do you want to reset all your configurations to default? [Yes/No] or Enter to skip." \
         && reset_config \
-        || echo_sys "$SYS_ANSWER"    
+        && echo_sys "$SYS_MESSAGE_DONE" \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
 function ask_reset_api_key() {
     # shellcheck disable=SC2015
     ask "Do you want to reset the OpenAI API key? [Yes/No] or Enter to skip." \
         && reset_openai_api_key \
-        || echo_sys "$SYS_ANSWER"
+        && echo_sys "$SYS_MESSAGE_DONE" \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
 function ask_reset_model() {
     # shellcheck disable=SC2015
     ask "Do you want to reset the OpenAI model to default? [Yes/No] or Enter to skip." \
         && reset_openai_model \
-        || echo_sys "$SYS_ANSWER"
+        && echo_sys "$SYS_MESSAGE_DONE" \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
 function remove_empty_lines() {
@@ -229,22 +231,22 @@ function input_config() {
     fi
 }
 
-function input_openai_api_key() {
-    if input_config "OPENAI_API_KEY" "OpenAI API key"; then
-        echo_sys "Your OpenAI API key has been saved."
-    fi
+function set_openai_api_key() {
+    # shellcheck disable=SC2015
+    input_config "OPENAI_API_KEY" "OpenAI API key" \
+        && echo_sys "$SYS_MESSAGE_DONE" \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
-function input_openai_model() {
-    if input_config "OPENAI_MODEL" "OpenAI model"; then
-        echo_sys "Your OpenAI model has been saved."
-    fi
+function set_openai_model() {
+    # shellcheck disable=SC2015
+    input_config "OPENAI_MODEL" "OpenAI model" \
+        &&  echo_sys "$SYS_MESSAGE_DONE" \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
 function check_and_save_openai_api_key() {
-    if [[ -z "$OPENAI_API_KEY" ]]; then
-        input_openai_api_key
-    fi
+    [[ -z "$OPENAI_API_KEY" ]] && set_openai_api_key
 }
 
 function get_data_content_from_chunk() {
@@ -438,8 +440,8 @@ function handle_commands() {
         "/help")            help ;;
         "/welcome")         welcome ;;
         "/config")          show_config ;; 
-        "/set key")         input_openai_api_key ;;
-        "/set model")       input_openai_model ;; 
+        "/set key")         set_openai_api_key ;;
+        "/set model")       set_openai_model ;; 
         "/reset key")       ask_reset_api_key ;;
         "/reset model")     ask_reset_model ;;
         "/reset all")       ask_reset_config ;;
