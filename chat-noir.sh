@@ -2,9 +2,9 @@
 
 readonly APPLICATION_NAME="CHAT-NOIR"
 readonly APPLICATION_VERSION="0.0.1"
-readonly DEFAULT_CONFIG_FILE_PATH="defaults.ini"
-readonly CONFIG_FILE_PATH="config.ini"
-readonly HISTORY_FILE_PATH="history.jsonl"
+readonly DEFAULT_CONFIG_FILENAME="defaults.ini"
+readonly CONFIG_FILENAME="config.ini"
+readonly HISTORY_FILENAME="history.jsonl"
 
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
 readonly ESC_SEQUENCE="\033["
@@ -14,7 +14,6 @@ readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
 readonly SYS_ANSWER="Ok."
-readonly TAB="     "
 
 function map() {
     local function_name="$1"
@@ -81,33 +80,46 @@ function echo_type() {
 function show_config() {
     echo_sys "Here's your configuration:"
     echo "$CODE_BLOCK_SYMBOL"
-    cat $CONFIG_FILE_PATH
+    cat $CONFIG_FILENAME
     echo "$CODE_BLOCK_SYMBOL"
 }
 
 function clean_env_config() {
-    local file_path="$1"
+    local filename="$1"
     local old_IFS=$IFS
 
     while IFS='=' read -r key _ ; do
         is_not_empty "$key" && unset "$key"
-    done < "$file_path"
+    done < "$filename"
 
     IFS=$old_IFS
 }
 
 function reset_config() {
-    clean_env_config $CONFIG_FILE_PATH 
-    cp "$DEFAULT_CONFIG_FILE_PATH" $CONFIG_FILE_PATH
+    clean_env_config $CONFIG_FILENAME 
+    cp "$DEFAULT_CONFIG_FILENAME" $CONFIG_FILENAME
     load_config        
     
     echo_sys "Your configurations have been reset to default."
 }
 
+function reset_openai_api_key() {
+    delete_config "OPENAI_API_KEY"
+    unset "OPENAI_API_KEY"
+    load_config
+}
+
+function reset_openai_model() {
+    default_value=$(get_default_config "OPENAI_MODEL")
+    delete_config "OPENAI_MODEL" 
+    add_config "OPENAI_MODEL" "$default_value"
+    load_config
+}
+
 function load_config() {
-    if [[ -f "$CONFIG_FILE_PATH" ]]; then
+    if [[ -f "$CONFIG_FILENAME" ]]; then
         # shellcheck source=config.ini
-        source "$CONFIG_FILE_PATH"
+        source "$CONFIG_FILENAME"
     else
         reset_config
     fi
@@ -126,22 +138,22 @@ function ask() {
 
 function ask_reset_config() {
     # shellcheck disable=SC2015
-    ask "Your configurations will be reset to default.\n${TAB}Do you want to proceed? [Yes/No] or Enter to skip." \
+    ask "Do you want to reset all your configurations to default? [Yes/No] or Enter to skip." \
         && reset_config \
         || echo_sys "$SYS_ANSWER"    
 }
 
 function ask_reset_api_key() {
     # shellcheck disable=SC2015
-    ask "Do you want to change the OpenAI API key? [Yes/No] or Enter to skip." \
-        && input_openai_api_key \
+    ask "Do you want to reset the OpenAI API key? [Yes/No] or Enter to skip." \
+        && reset_openai_api_key \
         || echo_sys "$SYS_ANSWER"
 }
 
 function ask_reset_model() {
     # shellcheck disable=SC2015
-    ask "Do you want to change the OpenAI model? [Yes/No] or Enter to skip." \
-        && input_openai_model \
+    ask "Do you want to reset the OpenAI model to default? [Yes/No] or Enter to skip." \
+        && reset_openai_model \
         || echo_sys "$SYS_ANSWER"
 }
 
@@ -157,18 +169,42 @@ function to_upper() {
     echo "$1" | tr '[:lower:]' '[:upper:]'
 }
 
+function get_config() {
+    local name="$1"
+    local filename="$2"
+    local key_value
+
+    key_value=$(grep -i "$name" "$filename")
+    if [[ -n "$key_value" ]]; then
+        echo "$key_value" \
+            | cut -d "=" -f2 \
+            | map remove_first_char \
+            | map remove_last_char
+    else
+        return 1
+    fi
+}
+
+function get_default_config() {
+    get_config "$1" "$DEFAULT_CONFIG_FILENAME"
+}
+
+function get_custom_config() {
+    get_config "$1" "$CONFIG_FILENAME"
+}
+
 function add_config() {
     local name="$1"
     local value="$2"
 
-    echo -e "\n$name=\"$value\"\n" >> "$CONFIG_FILE_PATH"
-    remove_empty_lines "$CONFIG_FILE_PATH"
+    echo -e "\n$name=\"$value\"\n" >> "$CONFIG_FILENAME"
+    remove_empty_lines "$CONFIG_FILENAME"
 }
 
 function delete_config() {
     local name="$1"
     
-    sed -i '' "/^$name/d" "$CONFIG_FILE_PATH"
+    sed -i '' "/^$name/d" "$CONFIG_FILENAME"
 }
 
 function input_config() {
@@ -262,9 +298,9 @@ function get_suggestion() {
     local openai_error_code="$1"
     
     if [[ "$openai_error_code" == "invalid_api_key" ]]; then
-        echo "Type '/reset-key' to change your OpenAI API key."
+        echo "Type '/set-key' to change your OpenAI API key."
     elif [[ "$openai_error_code" == "model_not_found" ]]; then
-        echo "Type '/reset-model' to change your OpenAI model."
+        echo "Type '/set-model' to change your OpenAI model."
     fi
 }
 
@@ -272,12 +308,18 @@ function handle_openai_error() {
     local error_chunk="$1"
     local openai_error_message
     local openai_error_code
-
+    
     openai_error_code=$(get_openai_error_code "$error_chunk")
     openai_error_message=$(get_openai_error_message "$error_chunk")
     
-    echo_type "$openai_error_message [$openai_error_code]"
-    echo_sys "$(get_suggestion "$openai_error_code")"
+    if [[ -n "$openai_error_code" ]]; then
+        echo_type "$openai_error_message [$openai_error_code]"
+    else
+        echo_type "$openai_error_message"
+    fi
+
+    get_suggestion "$openai_error_code" \
+        | map echo_sys
 }
 
 function handle_openai_chunks() {
@@ -329,7 +371,7 @@ function save_message_to_history() {
     local role="$1"
     local content="$2"
     
-    create_json_message "$role" "$content" | jq -c >> "$HISTORY_FILE_PATH"
+    create_json_message "$role" "$content" | jq -c >> "$HISTORY_FILENAME"
 }
 
 function get_base_openai_payload() {
@@ -355,7 +397,7 @@ function create_openai_payload_from_history() {
     openai_json_payload=$(get_base_openai_payload)
     while IFS= read -r json_message || is_not_empty "$json_message"; do
         openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
-    done < "$HISTORY_FILE_PATH"
+    done < "$HISTORY_FILENAME"
 
     echo "$openai_json_payload" | jq -c .
 }
@@ -401,14 +443,16 @@ function handle_commands() {
     
     case "$command" in
         "/help")            help ;;
-        "/config")          show_config ;;
-        "/reset-all")       ask_reset_config ;;
-        "/reset-key")       ask_reset_api_key ;;
-        "/reset-model")     ask_reset_model ;;
         "/welcome")         welcome ;;
-        "/exit")            handle_exit ;;
+        "/config")          show_config ;; 
+        "/set key")         input_openai_api_key ;;
+        "/set model")       input_openai_model ;; 
+        "/reset key")       ask_reset_api_key ;;
+        "/reset model")     ask_reset_model ;;
+        "/reset all")       ask_reset_config ;;
         "/history")         show_history ;;
-        "/clear-history")   clear_history && echo_sys "Done." ;;
+        "/clear-history")   clear_history ;;
+        "/exit")            handle_exit ;;
         *)                  help ;;
     esac
 }
@@ -433,11 +477,13 @@ function help() {
     echo "  /help             Show the help menu"
     echo "  /welcome          Show the welcome message"
     echo "  /config           Show the custom configurations"
-    echo "  /reset-key        Reset the OpenAI API key"
-    echo "  /reset-model      Reset the OpenAI model"
-    echo "  /reset-all        Reset the configurations to default"    
+    echo "  /set key          Set the OpenAI API key"
+    echo "  /set model        Set the OpenAI API model"
+    echo "  /reset key        Reset the OpenAI API key to default"
+    echo "  /reset model      Reset the OpenAI model to default"
+    echo "  /reset all        Reset the configurations to default"    
     echo "  /history          Show the conversation history"
-    echo "  /clear-history    Clear the conversation history"
+    echo "  /clear history    Clear the conversation history"
     echo "  /exit             Exit from the application"
     echo ""
 }
@@ -454,13 +500,13 @@ function show_history() {
         esac
         
     echo "$role: $(echo "$line" | jq -r ".content")"
-    done < "$HISTORY_FILE_PATH"
+    done < "$HISTORY_FILENAME"
     
     echo "$CODE_BLOCK_SYMBOL"
 }
 
 function clear_history() {
-    truncate -s 0 "$HISTORY_FILE_PATH"
+    truncate -s 0 "$HISTORY_FILENAME"
 }
 
 function init() {
