@@ -4,7 +4,8 @@ readonly APPLICATION_NAME="CHAT-NOIR"
 readonly APPLICATION_VERSION="0.0.1"
 readonly DEFAULT_CONFIG_FILENAME="defaults.ini"
 readonly CONFIG_FILENAME="config.ini"
-readonly HISTORY_FILENAME="history.jsonl"
+readonly MESSAGE_HISTORY=".history.jsonl"
+readonly LAST_MESSAGE_BUFFER=".last_message.tmp"
 
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
 readonly ESC_SEQUENCE="\033["
@@ -317,29 +318,48 @@ function handle_openai_error() {
         | map echo_sys
 }
 
-function handle_openai_chunks() {
+function is_valid_json() {
+    if ! echo "$1" | jq -e . >/dev/null 2>&1; then
+        return 1
+    fi
+}
+
+function is_last_chunk() {
+    if [[ ! "$completion_chunk" == "[DONE]" ]]; then
+        return 1
+    fi
+}
+
+function append_newline() {
+    echo -ne "\n"
+}
+
+function is_openai_error() {
+    if ! is_valid_json "$1"; then         
+        return 1
+    fi
+}
+
+function handle_openai_response() {
+    local response="$1"
     local completion_chunk
-    local data_chunk
     local error_chunk
     
-    while IFS= read -r chunk; do
-        if [[ $chunk == "data: "* ]]; then
-            completion_chunk=${chunk#data: }
-            if echo "$completion_chunk" | jq -e . >/dev/null 2>&1; then
-                data_chunk+=$(echo_completion_chunk "$completion_chunk")
-                echo_completion_chunk "$completion_chunk"
-            fi
-        else
-            error_chunk+="$chunk"
+    if [[ $response == "data: "* ]]; then
+        completion_chunk=${response#data: }
+        
+        if is_valid_json "$completion_chunk"; then
+            echo_completion_chunk "$completion_chunk"
+        elif is_last_chunk "$completion_chunk"; then
+            append_newline
         fi
-    done
-
-    if is_not_empty "$error_chunk"; then
-        handle_openai_error "$error_chunk"
     else
-        echo ""
-        save_message_to_history "assistant" "$data_chunk"
+        not_data+="$response"
     fi
+
+    if is_openai_error "$not_data"; then
+        handle_openai_error "$not_data"
+    fi  
 }
 
 function welcome() {
@@ -362,11 +382,29 @@ function create_json_message() {
         '{"role": $ROLE, "content": $CONTENT}'
 }
 
+function create_user_json_message() {
+    local content="$1"
+    
+    create_json_message "user" "$content"
+}
+
 function save_message_to_history() {
     local role="$1"
     local content="$2"
     
-    create_json_message "$role" "$content" | jq -c >> "$HISTORY_FILENAME"
+    create_json_message "$role" "$content" | jq -c >> "$MESSAGE_HISTORY"
+}
+
+function save_user_message() {
+    save_message_to_history "user" "$1"
+}
+
+function save_assistant_message() {
+    save_message_to_history "assistant" "$1"
+}
+
+function flush_last_message_buffer() {
+    truncate -s 0 "$LAST_MESSAGE_BUFFER"
 }
 
 function get_base_openai_payload() {
@@ -388,11 +426,17 @@ function append_openai_json_message() {
 function create_openai_payload_from_history() {
     local content="$1"
     local openai_json_payload
-    
+    local last_user_json_message
+
     openai_json_payload=$(get_base_openai_payload)
-    while IFS= read -r json_message || is_not_empty "$json_message"; do
-        openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
-    done < "$HISTORY_FILENAME"
+    if [[ -f "$MESSAGE_HISTORY" ]]; then
+        while IFS= read -r json_message || is_not_empty "$json_message"; do
+            openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
+        done < "$MESSAGE_HISTORY"
+    fi
+
+    last_user_json_message=$(create_user_json_message "$content")
+    openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$last_user_json_message")
 
     echo "$openai_json_payload" | jq -c .
 }
@@ -401,11 +445,11 @@ function create_chat_completions() {
     local content="$1"
     
     if [[ "$OFFLINE_MODE" == true ]]; then 
-        fake_openai_request | handle_openai_chunks
+        fake_openai_request | map handle_openai_response
     else    
         create_openai_payload_from_history "$content" \
             | map make_openai_request \
-            | handle_openai_chunks
+            | map handle_openai_response
     fi
 }
 
@@ -428,9 +472,11 @@ function fake_openai_request() {
 function get_openai_response() {
     local content=$1
     
-    save_message_to_history "user" "$content"
-    echo_gpt ""
-    create_chat_completions "$content"
+    echo_gpt
+    create_chat_completions "$content" | tee -a "$LAST_MESSAGE_BUFFER"
+    save_user_message "$content" 
+    save_assistant_message "$(<"$LAST_MESSAGE_BUFFER")"
+    flush_last_message_buffer
 }
 
 function handle_commands() {
@@ -498,17 +544,24 @@ function show_history() {
         esac
         
     echo "$role: $(echo "$line" | jq -r ".content")"
-    done < "$HISTORY_FILENAME"
+    done < "$MESSAGE_HISTORY"
     
     echo "$CODE_BLOCK_SYMBOL"
 }
 
 function clear_history() {
-    truncate -s 0 "$HISTORY_FILENAME"
+    truncate -s 0 "$MESSAGE_HISTORY"
+}
+
+function delete_file() {
+    local filename="$1"
+    
+    [[ -f "$filename" ]] && rm "$filename"
 }
 
 function init() {
-    clear_history
+    delete_file "$MESSAGE_HISTORY"
+    delete_file "$LAST_MESSAGE_BUFFER"
     load_config
     check_and_save_openai_api_key
 }
@@ -527,3 +580,4 @@ function main() {
 trap "echo; handle_exit" SIGINT SIGTERM
 
 main "$@"
+

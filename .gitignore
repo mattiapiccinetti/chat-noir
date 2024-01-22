@@ -1,6 +1,9 @@
 key
-history.jsonl
 config.ini
+
+.history.jsonl
+.last_message.tmp
+.error.tmp
 
 temp/*
 tmp/*
