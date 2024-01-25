@@ -6,6 +6,7 @@ readonly DEFAULT_CONFIG_FILENAME="defaults.ini"
 readonly CONFIG_FILENAME="config.ini"
 readonly MESSAGE_HISTORY=".history.jsonl"
 readonly LAST_MESSAGE_BUFFER=".last_message.tmp"
+readonly CURL_WRITE_OUT_PREFIX="http_code:"
 
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
 readonly ESC_SEQUENCE="\033["
@@ -334,32 +335,35 @@ function append_newline() {
     echo -ne "\n"
 }
 
-function is_openai_error() {
-    if ! is_valid_json "$1"; then         
+function is_error() {
+    if [[ "$1" != "$CURL_WRITE_OUT_PREFIX 4"* ]]; then
+        return 1
+    fi
+}
+
+function is_data() {
+    if [[ "$1" != "data: "* ]]; then
         return 1
     fi
 }
 
 function handle_openai_response() {
-    local response="$1"
+    local response_chunk="$1"
     local completion_chunk
-    local error_chunk
     
-    if [[ $response == "data: "* ]]; then
-        completion_chunk=${response#data: }
+    if is_data "$response_chunk"; then
+        completion_chunk=${response_chunk#data: }
         
         if is_valid_json "$completion_chunk"; then
             echo_completion_chunk "$completion_chunk"
         elif is_last_chunk "$completion_chunk"; then
             append_newline
         fi
+    elif is_error "$response_chunk"; then
+        handle_openai_error "$full_response"
     else
-        not_data+="$response"
+        full_response+="$response_chunk"
     fi
-
-    if is_openai_error "$not_data"; then
-        handle_openai_error "$not_data"
-    fi  
 }
 
 function welcome() {
@@ -460,6 +464,7 @@ function make_openai_request() {
                 --no-buffer \
                 --silent \
                 --show-error \
+                --write-out "${CURL_WRITE_OUT_PREFIX} %{http_code}\n" \
                 --header "Content-Type: application/json" \
                 --header "Authorization: Bearer $OPENAI_API_KEY" \
                 --data "$payload"
