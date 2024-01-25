@@ -38,6 +38,78 @@ function is_not_empty() {
     fi
 }
 
+function remove_empty_lines() {
+    sed -i '' -e '/^\s*$/d' "$1"
+}
+
+function to_lower() {
+    echo "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+function to_upper() {
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+function remove_first_char() {
+    local data="$1"
+    
+    if is_not_empty "$data"; then
+        echo "${data:1}"
+    else
+        echo "$data"
+    fi
+}
+
+function remove_last_char() {
+    local data="$1"
+    
+    if is_not_empty "$data"; then
+        echo "${data:0:${#data} - 1}"
+    else
+        echo "$data"
+    fi
+}
+
+function unescape_double_quotes() {
+    local data="$1"
+
+    echo "${data//\\\"/\"}"
+}
+
+function is_valid_json() {
+    if ! echo "$1" | jq -e . >/dev/null 2>&1; then
+        return 1
+    fi
+}
+
+function is_last_chunk() {
+    if [[ ! "$completion_chunk" == "[DONE]" ]]; then
+        return 1
+    fi
+}
+
+function append_newline() {
+    echo -ne "\n"
+}
+
+function is_error() {
+    if [[ "$1" != "$CURL_WRITE_OUT_PREFIX 4"* ]]; then
+        return 1
+    fi
+}
+
+function is_data() {
+    if [[ "$1" != "data: "* ]]; then
+        return 1
+    fi
+}
+
+function delete_file() {
+    local filename="$1"
+    
+    [[ -f "$filename" ]] && rm "$filename"
+}
+
 function echo_you() {
     echo -ne "${GREEN}YOU: ${RESET_COLOR}"
 }
@@ -161,18 +233,6 @@ function ask_reset_model() {
         || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
-function remove_empty_lines() {
-    sed -i '' -e '/^\s*$/d' "$1"
-}
-
-function to_lower() {
-    echo "$1" | tr '[:upper:]' '[:lower:]'
-}
-
-function to_upper() {
-    echo "$1" | tr '[:lower:]' '[:upper:]'
-}
-
 function get_config() {
     local name="$1"
     local filename="$2"
@@ -255,32 +315,6 @@ function get_data_content_from_chunk() {
     echo "$1" | jq -c -e "select(.choices[].delta.content != null) | .choices[].delta.content"
 }
 
-function remove_first_char() {
-    local data="$1"
-    
-    if is_not_empty "$data"; then
-        echo "${data:1}"
-    else
-        echo "$data"
-    fi
-}
-
-function remove_last_char() {
-    local data="$1"
-    
-    if is_not_empty "$data"; then
-        echo "${data:0:${#data} - 1}"
-    else
-        echo "$data"
-    fi
-}
-
-function unescape_double_quotes() {
-    local data="$1"
-
-    echo "${data//\\\"/\"}"
-}
-
 function echo_completion_chunk() {
     echo "$1" \
         | map get_data_content_from_chunk \
@@ -317,34 +351,6 @@ function handle_openai_error() {
     get_openai_error_code "$error_chunk" \
         | map get_suggestion \
         | map echo_sys
-}
-
-function is_valid_json() {
-    if ! echo "$1" | jq -e . >/dev/null 2>&1; then
-        return 1
-    fi
-}
-
-function is_last_chunk() {
-    if [[ ! "$completion_chunk" == "[DONE]" ]]; then
-        return 1
-    fi
-}
-
-function append_newline() {
-    echo -ne "\n"
-}
-
-function is_error() {
-    if [[ "$1" != "$CURL_WRITE_OUT_PREFIX 4"* ]]; then
-        return 1
-    fi
-}
-
-function is_data() {
-    if [[ "$1" != "data: "* ]]; then
-        return 1
-    fi
 }
 
 function handle_openai_response() {
@@ -411,7 +417,7 @@ function flush_last_message_buffer() {
     truncate -s 0 "$LAST_MESSAGE_BUFFER"
 }
 
-function get_base_openai_payload() {
+function create_base_openai_payload() {
     jq \
         -n \
         --arg OPENAI_MODEL "$OPENAI_MODEL" \
@@ -432,7 +438,7 @@ function create_openai_payload_from_history() {
     local openai_json_payload
     local last_user_json_message
 
-    openai_json_payload=$(get_base_openai_payload)
+    openai_json_payload=$(create_base_openai_payload)
     if [[ -f "$MESSAGE_HISTORY" ]]; then
         while IFS= read -r json_message || is_not_empty "$json_message"; do
             openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
@@ -558,12 +564,6 @@ function clear_history() {
     truncate -s 0 "$MESSAGE_HISTORY"
 }
 
-function delete_file() {
-    local filename="$1"
-    
-    [[ -f "$filename" ]] && rm "$filename"
-}
-
 function init() {
     delete_file "$MESSAGE_HISTORY"
     delete_file "$LAST_MESSAGE_BUFFER"
@@ -585,4 +585,3 @@ function main() {
 trap "echo; handle_exit" SIGINT SIGTERM
 
 main "$@"
-
