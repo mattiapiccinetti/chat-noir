@@ -11,7 +11,7 @@ readonly CURL_WRITE_OUT_PREFIX="http_code:"
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
 readonly ESC_SEQUENCE="\033["
 readonly RESET_COLOR="${ESC_SEQUENCE}0m"
-readonly CYAN="${ESC_SEQUENCE}36m"
+readonly GREEN="${ESC_SEQUENCE}32m"
 readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
@@ -39,7 +39,7 @@ function is_not_empty() {
 }
 
 function echo_you() {
-    echo -ne "${CYAN}YOU: ${RESET_COLOR}"
+    echo -ne "${GREEN}YOU: ${RESET_COLOR}"
 }
 
 function echo_gpt() {
