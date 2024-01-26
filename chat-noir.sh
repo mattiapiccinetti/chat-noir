@@ -7,16 +7,16 @@ readonly CONFIG_FILENAME="config.ini"
 readonly MESSAGE_HISTORY=".history.jsonl"
 readonly LAST_MESSAGE_BUFFER=".last_message.tmp"
 readonly CURL_WRITE_OUT_PREFIX="http_code:"
-
 readonly CODE_BLOCK_SYMBOL="\`\`\`"
+readonly SYS_MESSAGE_NOOP="Ok."
+readonly SYS_MESSAGE_DONE="Done."
+
 readonly ESC_SEQUENCE="\033["
 readonly RESET_COLOR="${ESC_SEQUENCE}0m"
 readonly GREEN="${ESC_SEQUENCE}32m"
 readonly MAGENTA="${ESC_SEQUENCE}35m"
 readonly YELLOW="${ESC_SEQUENCE}33m"
 readonly BOLD="${ESC_SEQUENCE}1m"
-readonly SYS_MESSAGE_NOOP="Ok."
-readonly SYS_MESSAGE_DONE="Done."
 
 function map() {
     local function_name="$1"
@@ -583,5 +583,3 @@ function main() {
 }
 
 trap "echo; handle_exit" SIGINT SIGTERM
-
-main "$@"
