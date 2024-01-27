@@ -384,12 +384,7 @@ function create_json_message() {
     local role="$1"
     local content="$2"
 
-    jq \
-        -c \
-        -n \
-        --arg ROLE "$role" \
-        --arg CONTENT "$content" \
-        '{"role": $ROLE, "content": $CONTENT}'
+    jq -c -n --arg ROLE "$role" --arg CONTENT "$content" '{"role": $ROLE, "content": $CONTENT}'
 }
 
 function create_user_json_message() {
@@ -418,10 +413,12 @@ function flush_last_message_buffer() {
 }
 
 function create_base_openai_payload() {
-    jq \
-        -n \
-        --arg OPENAI_MODEL "$OPENAI_MODEL" \
-        --arg OPENAI_ROLE_SYSTEM_CONTENT "$OPENAI_ROLE_SYSTEM_CONTENT" \
+    local openai_model="$1"
+    local openai_role_system_content="$2"
+    
+    jq -n -c \
+        --arg OPENAI_MODEL "$openai_model" \
+        --arg OPENAI_ROLE_SYSTEM_CONTENT "$openai_role_system_content" \
         '{"model": $OPENAI_MODEL, "messages": [{"role":"system", "content": $OPENAI_ROLE_SYSTEM_CONTENT}], "stream": true}'
 }
 
@@ -430,7 +427,7 @@ function append_openai_json_message() {
     local json_message="$2"
 
     echo "$base_openai_json_payload" \
-        | jq --argjson json_message "$json_message" '.messages += [$json_message]'
+        | jq -c --argjson json_message "$json_message" '.messages += [$json_message]'
 }
 
 function create_openai_payload_from_history() {
@@ -438,7 +435,7 @@ function create_openai_payload_from_history() {
     local openai_json_payload
     local last_user_json_message
 
-    openai_json_payload=$(create_base_openai_payload)
+    openai_json_payload=$(create_base_openai_payload "$OPENAI_MODEL" "$OPENAI_ROLE_SYSTEM_CONTENT")
     if [[ -f "$MESSAGE_HISTORY" ]]; then
         while IFS= read -r json_message || is_not_empty "$json_message"; do
             openai_json_payload=$(append_openai_json_message "$openai_json_payload" "$json_message")
