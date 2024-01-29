@@ -31,6 +31,8 @@ function fail() {
     else
         echo -e "$(red "FAIL") ${1}"
     fi
+
+    return 1
 }
 
 function assert_that() {
