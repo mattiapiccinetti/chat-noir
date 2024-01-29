@@ -503,7 +503,7 @@ function handle_commands() {
         "/reset model")     ask_reset_model ;;
         "/reset all")       ask_reset_config ;;
         "/history")         show_history ;;
-        "/clear-history")   clear_history ;;
+        "/clear history")   clear_history ;;
         "/exit")            handle_exit ;;
         *)                  help ;;
     esac
