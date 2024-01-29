@@ -5,7 +5,7 @@ SHELL := /bin/bash
 run:
 	@bash main.sh
 test:
-	@bash test-chat-noir.sh
+	@bash chat-noir-test.sh
 
 watch:
 	while true; do \

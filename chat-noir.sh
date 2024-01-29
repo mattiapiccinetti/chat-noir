@@ -1,22 +1,25 @@
 #!/bin/bash
 
-readonly APPLICATION_NAME="CHAT-NOIR"
-readonly APPLICATION_VERSION="0.0.1"
-readonly DEFAULT_CONFIG_FILENAME="defaults.ini"
-readonly CONFIG_FILENAME="config.ini"
-readonly MESSAGE_HISTORY=".history.jsonl"
-readonly LAST_MESSAGE_BUFFER=".last_message.tmp"
-readonly CURL_WRITE_OUT_PREFIX="http_code:"
-readonly CODE_BLOCK_SYMBOL="\`\`\`"
-readonly SYS_MESSAGE_NOOP="Ok."
-readonly SYS_MESSAGE_DONE="Done."
+APPLICATION_NAME="CHAT-NOIR"
+APPLICATION_VERSION="0.0.1"
 
-readonly ESC_SEQUENCE="\033["
-readonly RESET_COLOR="${ESC_SEQUENCE}0m"
-readonly GREEN="${ESC_SEQUENCE}32m"
-readonly MAGENTA="${ESC_SEQUENCE}35m"
-readonly YELLOW="${ESC_SEQUENCE}33m"
-readonly BOLD="${ESC_SEQUENCE}1m"
+DEFAULT_CONFIG_FILENAME="defaults.ini"
+CONFIG_FILENAME="config.ini"
+MESSAGE_HISTORY=".history.jsonl"
+LAST_MESSAGE_BUFFER=".last_message.tmp"
+FAKE_OPENAI_RESPONSE_FILENAME=".fake_openai_response"
+
+CURL_WRITE_OUT_PREFIX="http_code:"
+CODE_BLOCK_SYMBOL="\`\`\`"
+SYS_MESSAGE_NOOP="Ok."
+SYS_MESSAGE_DONE="Done."
+
+ESC_SEQUENCE="\033["
+RESET_COLOR="${ESC_SEQUENCE}0m"
+GREEN="${ESC_SEQUENCE}32m"
+MAGENTA="${ESC_SEQUENCE}35m"
+YELLOW="${ESC_SEQUENCE}33m"
+BOLD="${ESC_SEQUENCE}1m"
 
 function map() {
     local function_name="$1"
@@ -155,7 +158,7 @@ function echo_type() {
 function show_config() {
     echo_sys "Here's your configuration:"
     echo "$CODE_BLOCK_SYMBOL"
-    cat $CONFIG_FILENAME
+    cat "$CONFIG_FILENAME"
     echo "$CODE_BLOCK_SYMBOL"
 }
 
@@ -171,8 +174,8 @@ function clean_env_config() {
 }
 
 function reset_config() {
-    clean_env_config $CONFIG_FILENAME 
-    cp "$DEFAULT_CONFIG_FILENAME" $CONFIG_FILENAME
+    clean_env_config "$CONFIG_FILENAME"
+    cp "$DEFAULT_CONFIG_FILENAME" "$CONFIG_FILENAME"
     load_config
 }
 
@@ -474,7 +477,7 @@ function make_openai_request() {
 }
 
 function fake_openai_request() {
-    cat "fake_openai_response"
+    cat "$FAKE_OPENAI_RESPONSE_FILENAME"
 }
 
 function get_openai_response() {
@@ -573,10 +576,10 @@ function handle_exit() {
     exit 0
 }
 
+trap "echo; handle_exit" SIGINT SIGTERM
+
 function main() {
     welcome
     init
     create_chat
 }
-
-trap "echo; handle_exit" SIGINT SIGTERM

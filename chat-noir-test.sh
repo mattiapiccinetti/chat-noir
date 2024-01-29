@@ -1,92 +1,9 @@
 #!/bin/bash
 
-source "$(dirname "$0")/chat-noir.sh"
+set -e
 
-function green() {
-    echo -e "\033[32m${1}\033[0m"
-}
-
-function red() {
-    echo -e "\033[31m${1}\033[0m"
-}
-
-function bold() {
-    echo -e "\033[1m${1}\033[0m"
-}
-
-function strip_colors() {
-  echo "$1" | sed -r "s/\x1B\[[0-9;]*[JKmsu]//g"
-}
-
-function pass() {
-    echo -e "$(green "PASS") ${1}"
-}
-
-function fail() {
-    local function_name="$1"
-    local reason="$2"
-    
-    if [[ -n "$reason" ]]; then
-        echo -e "$(red "FAIL") ${1} -> $reason"
-    else
-        echo -e "$(red "FAIL") ${1}"
-    fi
-}
-
-function assert_that() {
-    local function_name="$1"
-
-    shift
-    actual=$("$function_name" "$@")
-    echo "$function_name|$actual"
-}
-
-function is_equal_to() {
-    local expected="$1"
-    
-    while IFS="|" read -r -e function_name actual; do
-        if [[ "$(strip_colors "$actual")" == "$(strip_colors "$expected")" ]]; then
-            pass "$function_name"
-        else
-            fail "$function_name" "Expected $(bold "'$expected'") but was $(bold "'$actual'")"
-        fi
-    done
-}
-
-function assert_true() {
-    local function_name="$1"
-
-    shift
-    if $function_name "$@" >/dev/null 2>&1; then
-        pass "$function_name"
-    else
-        fail "$function_name" "Expected $(bold "'true'") but was $(bold "'false'")"
-    fi
-}
-
-function assert_false() {
-    local function_name="$1"
-
-    shift
-    if ! $function_name "$@" >/dev/null 2>&1; then
-        pass "$function_name"
-    else
-        fail "$function_name" "Expected $(bold "'false'") but was $(bold "'true'")"
-    fi
-}
-
-function assert_empty() {
-    local function_name="$1"
-    local actual
-    
-    shift
-    actual="$($function_name "$@")"
-    if [[ -z "$actual" ]]; then
-        pass "$function_name"
-    else
-        fail "$function_name" "Expected $(bold "empty") but was $(bold "'$actual'")"
-    fi
-}
+source "assertish.sh"
+source "chat-noir.sh"
 
 echo
 echo ":: Running tests $0"
@@ -143,7 +60,7 @@ assert_that echo_ask 'this is a long message' | is_equal_to 'THI: '
 assert_that echo_type 'foo bar' | is_equal_to 'foo bar'
 assert_empty echo_type
 
-assert_empty get_default_config 'FOO'
+assert_that get_default_config 'FOO' | is_equal_to ''
 assert_that get_default_config 'OPENAI_API_URL' | is_equal_to 'https://api.openai.com/v1/chat/completions'
 assert_that get_default_config 'OPENAI_MODEL' | is_equal_to 'gpt-3.5-turbo'
 assert_that get_default_config 'OPENAI_ROLE_SYSTEM_CONTENT' | is_equal_to 'You are a helpful assistant.'
