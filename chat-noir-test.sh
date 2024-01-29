@@ -151,7 +151,6 @@ function test_append_openai_json_message() {
 function run_tests() {
     local test_filename="$0"
     
-    echo
     echo ":: Running tests in '$0'"
     echo
 
