@@ -19,7 +19,7 @@ function strip_colors() {
 function pass() {
     local function_name="$1"
     local parameters="$2"
-    local max_parameters_length
+    local max_parameters_length=50
 
     max_parameters_length=50
     if ((${#parameters} > "$max_parameters_length")); then
@@ -64,9 +64,9 @@ function is_equal_to() {
     
     while IFS="|" read -r -e function_name parameters actual; do
         if [[ "$(strip_colors "$actual")" == "$(strip_colors "$expected")" ]]; then
-            pass "$function_name" "$parameters"
+            echo "PASS|$function_name|$parameters"
         else
-            fail "$function_name" "$parameters" "Expected $(bold "'$expected'") but was $(bold "'$actual'")"
+            echo "FAIL|$function_name|$parameters|$expected|$actual"
         fi
     done
 }
@@ -76,9 +76,9 @@ function assert_true() {
 
     shift
     if $function_name "$@" >/dev/null 2>&1; then
-        pass "$function_name" "$@"
+        echo "PASS|$function_name|$*"
     else
-        fail "$function_name" "$@" "Expected $(bold "'true'") but was $(bold "'false'")"
+        echo "FAIL|$function_name|$*|true|false"
     fi
 }
 
@@ -87,9 +87,9 @@ function assert_false() {
 
     shift
     if ! $function_name "$@" >/dev/null 2>&1; then
-        pass "$function_name" "$@"
+        echo "PASS|$function_name|$*"
     else
-        fail "$function_name" "$@" "Expected $(bold "'false'") but was $(bold "'true'")"
+        echo "FAIL|$function_name|$*|false|true"
     fi
 }
 
@@ -100,8 +100,46 @@ function assert_empty() {
     shift
     actual="$($function_name "$@")"
     if [[ -z "$actual" ]]; then
-        pass "$function_name" "$@"
+        echo "PASS|$function_name|$*"
     else
-        fail "$function_name" "$@" "Expected $(bold "empty") but was $(bold "'$actual'")"
+        echo "FAIL|$function_name|$parameters|empty|$actual"
     fi
+}
+
+function get_test_functions_from_file() {
+    local filename="$1"
+
+    grep -E '^function test_[^}]*{' "$filename" \
+        | sed 's/function //' \
+        | sed 's/(.*$//'
+}
+
+function run_tests() {
+    local test_filename="$0"
+    local test_pass_count=0
+    local test_fail_count=0
+    local test_fn_result
+    local test_fn_full_name
+    
+    for test_fn_name in $(get_test_functions_from_file "$test_filename"); do
+        test_fn_result=$(eval "$test_fn_name")
+        test_fn_full_name="$test_filename::$test_fn_name"
+
+        if [[ "$(echo "$test_fn_result" | grep -c -e '^FAIL')" -gt 0 ]]; then    
+            ((test_fail_count++))
+            
+            fail "$test_fn_full_name"
+            while IFS="|" read -e -r _ fn_name parameters expected actual; do
+                echo -e "     $fn_name($parameters) -> Expected '$expected' but was '$actual'"
+            done <<< "$(echo "$test_fn_result" | grep -e '^FAIL')"
+        else
+            ((test_pass_count++))
+            pass "$test_fn_full_name"
+        fi
+    done
+
+    echo
+    echo "$(bold "PASS"): $test_pass_count"
+    echo "$(bold "FAIL"): $test_fail_count"
+    echo
 }

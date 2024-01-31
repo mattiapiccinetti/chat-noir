@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 source "assertish.sh"
 source "chat-noir.sh"
 
@@ -146,21 +144,6 @@ function test_append_openai_json_message() {
     expected='{"model":"foo model","messages":[{"role":"system","content":"foo content"},{"role":"user","content":"Who am I?"}],"stream":true}'
 
     assert_that append_openai_json_message "$base_openai_payload" "$user_json_message" | is_equal_to "$expected"
-}
-
-function run_tests() {
-    local test_filename="$0"
-    
-    echo ":: Running tests in '$0'"
-    echo
-
-    functions=$(grep -E 'function test_[^}]*{' "$test_filename" \
-        | sed 's/function //' \
-        | sed 's/(.*$//') 
-    
-    for fn in $functions; do
-        $fn
-    done
 }
 
 run_tests "$0"
