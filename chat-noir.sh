@@ -176,7 +176,10 @@ function clean_env_config() {
 }
 
 function reset_config() {
-    clean_env_config "$CONFIG_FILENAME"
+    if [[ -f "$CONFIG_FILENAME" ]]; then
+        clean_env_config "$CONFIG_FILENAME"
+    fi
+    
     cp "$DEFAULT_CONFIG_FILENAME" "$CONFIG_FILENAME"
     load_config
 }
