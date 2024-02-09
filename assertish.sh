@@ -71,6 +71,16 @@ function is_equal_to() {
     done
 }
 
+function is_empty() {
+    while IFS="|" read -r -e function_name parameters actual; do
+        if [[ -z "$(strip_colors "$actual")" ]]; then
+            echo "PASS|$function_name|$parameters"
+        else
+            echo "FAIL|$function_name|$parameters|empty|$actual"
+        fi
+    done
+}
+
 function assert_true() {
     local function_name="$1"
 
@@ -118,6 +128,7 @@ function run_tests() {
     local test_filename="$0"
     local test_pass_count=0
     local test_fail_count=0
+    
     local test_fn_result
     local test_fn_full_name
     

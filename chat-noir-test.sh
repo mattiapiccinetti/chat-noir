@@ -7,7 +7,7 @@ function test_has_no_blanks() {
     assert_true has_no_blanks 'ThisTextHasNoBlanks'
     assert_false has_no_blanks 'This Text Has Blanks'
     assert_true has_no_blanks ''
-    assert_true has_no_blanks 
+    assert_true has_no_blanks
 }
 
 function test_is_not_empty() {
