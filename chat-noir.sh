@@ -1,13 +1,15 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}")")
+
 APPLICATION_NAME="CHAT-NOIR"
 APPLICATION_VERSION="0.0.1"
 
-DEFAULT_CONFIG_FILENAME="defaults.ini"
-CONFIG_FILENAME="config.ini"
-MESSAGE_HISTORY=".history.jsonl"
-LAST_MESSAGE_BUFFER=".last_message.tmp"
-FAKE_OPENAI_RESPONSE_FILENAME=".fake_openai_response"
+DEFAULT_CONFIG_FILENAME="$SCRIPT_DIR/defaults.ini"
+CONFIG_FILENAME="$SCRIPT_DIR/config.ini"
+MESSAGE_HISTORY="$SCRIPT_DIR/.history.jsonl"
+LAST_MESSAGE_BUFFER="$SCRIPT_DIR/.last_message.tmp"
+FAKE_OPENAI_RESPONSE_FILENAME="$SCRIPT_DIR/.fake_openai_response"
 
 CURL_WRITE_OUT_PREFIX="http_code:"
 CODE_BLOCK_SYMBOL="\`\`\`"
