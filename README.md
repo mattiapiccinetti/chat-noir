@@ -10,7 +10,7 @@ To install and run CHAT-NOIR, follow these steps:
 2. Run the following command to download and execute the installation script:
 
 ```bash
-curl -sS https://raw.githubusercontent.com/mattiapiccinetti/chat-noir/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/mattiapiccinetti/chat-noir/main/install.sh | sh
 ```
 
 This command will download and run the installation script automatically. Please note that you may need to provide superuser privileges (sudo) if required by your system.
