@@ -10,6 +10,7 @@ CONFIG_FILENAME="$SCRIPT_DIR/config.ini"
 MESSAGE_HISTORY="$SCRIPT_DIR/.history.jsonl"
 LAST_MESSAGE_BUFFER="$SCRIPT_DIR/.last_message.tmp"
 FAKE_OPENAI_RESPONSE_FILENAME="$SCRIPT_DIR/.fake_openai_response"
+UNINSTALL_SCRIPT="$SCRIPT_DIR/uninstall.sh"
 
 CURL_WRITE_OUT_PREFIX="http_code:"
 CODE_BLOCK_SYMBOL="\`\`\`"
@@ -510,6 +511,7 @@ function handle_commands() {
         "/history")         show_history ;;
         "/clear history")   clear_history ;;
         "/exit")            handle_exit ;;
+        "/uninstall")       uninstall ;;
         *)                  help ;;
     esac
 }
@@ -545,6 +547,8 @@ function help() {
     echo "  /history          Show the conversation history"
     echo "  /clear history    Clear the conversation history"
     echo "  /exit             Exit from the application"
+    echo
+    echo "  /uninstall        Uninstall CHAT-NOIR (Please don't <3)"
     echo 
 }
 
@@ -579,6 +583,14 @@ function init() {
 function handle_exit() {
     echo_sys "Bye!"
     exit 0
+}
+
+function uninstall() {
+    # shellcheck disable=SC2015
+    ask "Do you want to uninstall CHAT-NOIR? [Yes/No] or Enter to skip." \
+        && "$UNINSTALL_SCRIPT" \
+        && exit 0 \
+        || echo_sys "$SYS_MESSAGE_NOOP"
 }
 
 trap "echo; handle_exit" SIGINT SIGTERM

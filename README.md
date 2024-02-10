@@ -33,6 +33,7 @@ The following commands are available:
 - `/history`: Show the conversation history.
 - `/clear history`: Clear the conversation history.
 - `/exit`: Exit from the application.
+- `/uninstall`: Uninstall the application.
 
 To display the list of available commands, type `/help` in the chat.
 
