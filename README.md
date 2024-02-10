@@ -2,6 +2,11 @@
 
 CHAT-NOIR is a command-line chat application for OpenAI written in Bash. It allows you to engage in conversations with an AI model and get responses in real-time.
 
+
+## Prerequisites
+
+Before proceeding with the installation, ensure that you have [jq](https://jqlang.github.io/jq/) installed.
+
 ## Installation
 
 To install and run CHAT-NOIR, follow these steps:
@@ -38,6 +43,14 @@ The following commands are available:
 To display the list of available commands, type `/help` in the chat.
 
 To exit the chat, simply type `/exit` or press `Ctrl + C`.
+
+## Uninstalling CHAT-NOIR
+
+To uninstall CHAT-NOIR follow these steps:
+
+1. Ensure that CHAT-NOIR is currently running.
+2. From within the running application, type the command "/uninstall" and press Enter.
+3. Confirm the uninstallation by typing 'Y' when prompted.
 
 ## Developer Notes
 
