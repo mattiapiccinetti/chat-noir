@@ -153,4 +153,8 @@ function run_tests() {
     echo "$(bold "PASS"): $test_pass_count"
     echo "$(bold "FAIL"): $test_fail_count"
     echo
+
+    if [[ "$test_fail_count" -gt 0 ]]; then
+        exit 1
+    fi
 }
