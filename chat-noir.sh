@@ -573,9 +573,28 @@ function clear_history() {
     truncate -s 0 "$MESSAGE_HISTORY"
 }
 
+function check_command() {
+    local command="$1"
+    local download_url="$2"
+    
+    if ! command -v "$command" >/dev/null 2>&1; then
+        if [[ -n "$download_url" ]]; then
+            echo_sys "$command not found. Please visit $download_url to download it."
+        else
+            echo_sys "$command not found."
+        fi
+
+        exit 1
+    fi
+}
+
 function init() {
     delete_file "$MESSAGE_HISTORY"
     delete_file "$LAST_MESSAGE_BUFFER"
+    
+    check_command "curl" "https://curl.se"
+    check_command "jq" "https://jqlang.github.io/jq/"
+    
     load_config
     check_and_save_openai_api_key
 }
