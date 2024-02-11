@@ -1,4 +1,4 @@
-.PHONY: run test watch install
+.PHONY: run test watch
 
 SHELL := /bin/bash
 
@@ -16,7 +16,3 @@ watch:
 		echo ":::: $$(date "+%Y-%m-%d %H:%M:%S") ::::"; \
 		sleep 3; \
 	done
-
-install:
-	apt-get update
-	apt-get install -y curl jq
