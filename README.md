@@ -1,5 +1,7 @@
 # CHAT-NOIR
 
+[![CI](https://github.com/mattiapiccinetti/chat-noir/actions/workflows/ci.yaml/badge.svg)](https://github.com/mattiapiccinetti/chat-noir/actions/workflows/ci.yaml)
+
 CHAT-NOIR is a chat application written in Bash and built using the OpenAI API, allowing you to have real-time conversations with an Open AI model through a command-line interface.
 
 
