@@ -1,11 +1,19 @@
 # CHAT-NOIR
 
-CHAT-NOIR is a command-line chat application for OpenAI written in Bash. It allows you to engage in conversations with an AI model and get responses in real-time.
+CHAT-NOIR is a chat application written in Bash and built using the OpenAI API, allowing you to have real-time conversations with an Open AI model through a command-line interface.
 
 
 ## Prerequisites
 
-Before proceeding with the installation, ensure that you have [jq](https://jqlang.github.io/jq/) installed.
+Before using CHAT-NOIR, ensure that you have the following prerequisites:
+
+- `jq` installed on your system. You can check if it is already installed by running the following command:
+  ```
+  jq --version
+  ```
+  If it is not installed, follow the installation instructions specific to your operating system from the official `jq` website: https://jqlang.github.io/jq/
+
+- A valid OpenAI API key. If you do not have one, you can sign up for an account at https://openai.com. Once you have registered and obtained the API key, keep it handy as it will be used for authentication.
 
 ## Installation
 
@@ -24,7 +32,7 @@ This command will download and run the installation script automatically. Please
 
 ## Usage
 
-CHAT-NOIR provides a simple and intuitive interface to communicate with the OpenAI model. After launching the application, you will be prompted to enter your message. The AI model will analyze your input and generate a response. The conversation can continue by alternating between user messages and AI responses.
+After launching the application and configuring a valid OpenAI API key, you will be prompted to enter your message to start the conversation.
 
 The following commands are available:
 - `/help`: Show the help menu.
@@ -52,22 +60,19 @@ To uninstall CHAT-NOIR follow these steps:
 2. From within the running application, type the command "/uninstall" and press Enter.
 3. Confirm the uninstallation by typing 'Y' when prompted.
 
-## Developer Notes
+## Uninstalling CHAT-NOIR (manually)
 
-If you wish to contribute to CHAT-NOIR or modify its code, here are a few notes to get you started:
+1. Locate the installation folder `chat-noir` and delete it.
+2. Delete the symlink `/usr/local/bin/chat-noir`.
 
-- The source code is available on [GitHub](https://github.com/mattiapiccinetti/chat-noir).
-- The application is written in Bash and uses the OpenAI API to interact with the AI model.
-- It leverages the `curl` command to make API requests and process the model responses.
-- The installation script takes care of dependencies and sets up the environment.
 
 ## License
 
-CHAT-NOIR is open-source software released under the [MIT License](https://github.com/mattiapiccinetti/chat-noir/blob/main/LICENSE). Feel free to use, modify, and distribute it according to the terms of the license.
+CHAT-NOIR is open-source software released under the [GNU GPLv3](https://github.com/mattiapiccinetti/chat-noir/blob/main/LICENSE). Feel free to use, modify, and distribute it according to the terms of the license.
 
 ## Support
 
-If you encounter any issues or have any questions regarding CHAT-NOIR, please create an issue on the [GitHub repository](https://github.com/mattiapiccinetti/chat-noir/issues). We appreciate any feedback and suggestions for improvement.
+If you come across any problems or queries related to CHAT-NOIR, feel free to reach out to me directly. You can contact me by creating an issue on the GitHub repository. Your feedback and suggestions for enhancing the application are highly valued and appreciated.
 
 Happy chatting!
 
